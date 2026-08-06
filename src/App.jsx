@@ -67,16 +67,17 @@ function App() {
 
   function saveRecord(record) {
     setRecords((previousRecords) => {
-      const recordsWithoutSameDate = previousRecords.filter(
-        (item) => item.date !== record.date && item.id !== record.id,
-      );
-
       const recordToSave = {
-        id: record.id || crypto.randomUUID(),
         ...record,
+        id: record.id ?? crypto.randomUUID(),
       };
 
-      return [recordToSave, ...recordsWithoutSameDate].sort((a, b) =>
+      const recordsWithoutDuplicate = previousRecords.filter(
+        (item) =>
+          item.id !== recordToSave.id && item.date !== recordToSave.date,
+      );
+
+      return [recordToSave, ...recordsWithoutDuplicate].sort((a, b) =>
         b.date.localeCompare(a.date),
       );
     });
