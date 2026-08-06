@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AppHeader from "./components/common/AppHeader";
 import TodaySummary from "./components/dashboard/TodaySummary";
 import AddRecordCard from "./components/dashboard/AddRecordCard";
-import SettingsCard from "./components/dashboard/SettingsCard";
+import Toast from "./components/common/Toast";
 import DataManagementCard from "./components/dashboard/DataManagementCard";
 import InsightsCard from "./components/dashboard/InsightsCard";
 import WeeklyComparisonCard from "./components/dashboard/WeeklyComparisonCard";
@@ -12,7 +12,7 @@ import CaloriesCard from "./components/calories/CaloriesCard";
 import WeightCard from "./components/weight/WeightCard";
 import PerformanceCard from "./components/performance/PerformanceCard";
 import HistoryCard from "./components/history/HistoryCard";
-
+import SettingsModal from "./components/dashboard/SettingsModal";
 const RECORDS_STORAGE_KEY = "fitness-tracker-records";
 const SETTINGS_STORAGE_KEY = "fitness-tracker-settings";
 
@@ -48,7 +48,8 @@ function App() {
   });
 
   const [editingRecord, setEditingRecord] = useState(null);
-
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toast, setToast] = useState(null);
   useEffect(() => {
     try {
       localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
@@ -83,6 +84,10 @@ function App() {
     });
 
     setEditingRecord(null);
+    showToast({
+      title: record.id ? "Registro actualizado" : "Registro guardado",
+      message: `Se guardó la información del ${formatToastDate(record.date)}.`,
+    });
   }
 
   function deleteRecord(id) {
@@ -93,8 +98,25 @@ function App() {
     if (editingRecord?.id === id) {
       setEditingRecord(null);
     }
-  }
 
+    showToast({
+      title: "Registro eliminado",
+      message: "El registro se eliminó correctamente.",
+      type: "info",
+    });
+  }
+  function saveSettings(newSettings) {
+    setSettings(newSettings);
+
+    showToast({
+      title: "Configuración guardada",
+      message: `${newSettings.mode} · ${Number(
+        newSettings.goalCalories,
+      ).toLocaleString("es-MX")} kcal · ${Number(
+        newSettings.goalWeight,
+      ).toFixed(1)} kg`,
+    });
+  }
   function importData(data) {
     const importedRecords = [...data.records].sort((a, b) =>
       b.date.localeCompare(a.date),
@@ -113,6 +135,25 @@ function App() {
   function deleteAllData() {
     setRecords([]);
     setEditingRecord(null);
+
+    showToast({
+      title: "Registros eliminados",
+      message: "Se eliminó todo el historial correctamente.",
+      type: "info",
+    });
+  }
+  function showToast({ title, message = "", type = "success" }) {
+    setToast({
+      title,
+      message,
+      type,
+    });
+
+    window.clearTimeout(showToast.timeoutId);
+
+    showToast.timeoutId = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
   }
 
   function startEditing(record) {
@@ -128,7 +169,7 @@ function App() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
-      <AppHeader />
+      <AppHeader onOpenSettings={() => setSettingsOpen(true)} />
 
       <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
         <section id="inicio" className="scroll-mt-24">
@@ -174,10 +215,6 @@ function App() {
           />
         </section>
 
-        <section id="configuracion" className="scroll-mt-24">
-          <SettingsCard settings={settings} onSaveSettings={setSettings} />
-        </section>
-
         <section id="datos" className="scroll-mt-24">
           <DataManagementCard
             records={records}
@@ -192,8 +229,23 @@ function App() {
           este navegador.
         </footer>
       </div>
+      <SettingsModal
+        isOpen={settingsOpen}
+        settings={settings}
+        onClose={() => setSettingsOpen(false)}
+        onSaveSettings={saveSettings}
+      />
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </main>
   );
 }
 
 export default App;
+
+function formatToastDate(date) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
