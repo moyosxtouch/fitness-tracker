@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  Camera,
   DatabaseBackup,
   History,
   PlusCircle,
@@ -22,6 +23,11 @@ const links = [
     href: "#progreso",
     label: "Progreso",
     icon: Activity,
+  },
+  {
+    href: "#fotos",
+    label: "Fotos",
+    icon: Camera,
   },
   {
     href: "#historial",

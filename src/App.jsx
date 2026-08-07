@@ -13,6 +13,7 @@ import WeightCard from "./components/weight/WeightCard";
 import PerformanceCard from "./components/performance/PerformanceCard";
 import HistoryCard from "./components/history/HistoryCard";
 import SettingsModal from "./components/dashboard/SettingsModal";
+import ProgressPhotosCard from "./components/dashboard/ProgressPhotosCard";
 const RECORDS_STORAGE_KEY = "fitness-tracker-records";
 const SETTINGS_STORAGE_KEY = "fitness-tracker-settings";
 
@@ -205,6 +206,9 @@ function App() {
 
             <PerformanceCard records={records} />
           </div>
+        </section>
+        <section id="fotos" className="scroll-mt-24">
+          <ProgressPhotosCard records={records} onShowToast={showToast} />
         </section>
 
         <section id="historial" className="scroll-mt-24">

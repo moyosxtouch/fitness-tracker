@@ -1,12 +1,15 @@
 import { useRef } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-
+import { exportPhotoBackup, importPhotoBackup } from "../../utils/photoBackup";
+import { exportFullBackup } from "../../utils/fullBackup";
 import {
   DatabaseBackup,
   Download,
   FileSpreadsheet,
   FileText,
+  ImageDown,
+  ImageUp,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -18,6 +21,7 @@ export default function DataManagementCard({
   onDeleteAllData,
 }) {
   const fileInputRef = useRef(null);
+  const photoBackupInputRef = useRef(null);
 
   function exportCsv() {
     if (records.length === 0) {
@@ -49,7 +53,20 @@ export default function DataManagementCard({
       type: "text/csv;charset=utf-8",
     });
   }
+  async function handleFullBackup() {
+    try {
+      await exportFullBackup({
+        records,
+        settings,
+      });
 
+      alert("Respaldo completo generado correctamente.");
+    } catch (error) {
+      console.error("No se pudo generar el respaldo completo:", error);
+
+      alert("No se pudo generar el respaldo completo.");
+    }
+  }
   function exportPdf() {
     if (records.length === 0) {
       alert("Todavía no hay registros para generar el PDF.");
@@ -301,6 +318,45 @@ export default function DataManagementCard({
     }
   }
 
+  async function handleExportPhotoBackup() {
+    try {
+      await exportPhotoBackup();
+
+      alert("Respaldo de fotos generado correctamente.");
+    } catch (error) {
+      console.error("No se pudo exportar el respaldo de fotos:", error);
+
+      alert(error.message || "No se pudo generar el respaldo de fotografías.");
+    }
+  }
+
+  async function handleImportPhotoBackup(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const confirmed = window.confirm(
+        "¿Importar este respaldo de fotografías?",
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const importedCount = await importPhotoBackup(file);
+
+      alert(`Se importaron ${importedCount} registros fotográficos.`);
+    } catch (error) {
+      console.error("No se pudo importar el respaldo de fotos:", error);
+
+      alert("No se pudo importar el respaldo fotográfico.");
+    } finally {
+      event.target.value = "";
+    }
+  }
   function exportBackup() {
     const backup = {
       version: 1,
@@ -404,7 +460,7 @@ export default function DataManagementCard({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <ActionButton
           onClick={exportCsv}
           icon={<FileSpreadsheet size={19} />}
@@ -428,6 +484,21 @@ export default function DataManagementCard({
           description="Guarda registros y configuración en JSON."
           className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
         />
+        <ActionButton
+          onClick={handleExportPhotoBackup}
+          icon={<ImageDown size={19} />}
+          title="Respaldar fotos"
+          description="Descarga todas tus fotografías en un ZIP."
+          className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+        />
+
+        <ActionButton
+          onClick={() => photoBackupInputRef.current?.click()}
+          icon={<ImageUp size={19} />}
+          title="Importar fotos"
+          description="Restaura un respaldo ZIP de fotografías."
+          className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+        />
 
         <ActionButton
           onClick={() => fileInputRef.current?.click()}
@@ -443,6 +514,13 @@ export default function DataManagementCard({
           title="Eliminar registros"
           description="Borra permanentemente todo el historial."
           className="border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+        />
+        <ActionButton
+          onClick={handleFullBackup}
+          icon={<DatabaseBackup size={19} />}
+          title="Respaldo completo"
+          description="Descarga registros, configuración y fotografías en un solo ZIP."
+          className="bg-lime-400 text-black hover:bg-lime-300"
         />
       </div>
 
