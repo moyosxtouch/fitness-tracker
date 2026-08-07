@@ -21,6 +21,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   });
 
   const [loading, setLoading] = useState(true);
+  const [selectedProgress, setSelectedProgress] = useState(null);
 
   useEffect(() => {
     loadPhotos();
@@ -361,7 +362,20 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         <PhotoComparison progressPhotos={progressPhotos} />
       </div>
       <div>
-        <h3 className="mb-4 font-semibold">Historial fotográfico</h3>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Galería de progreso</h3>
+
+            <p className="mt-1 text-sm text-zinc-500">
+              Selecciona una sesión para ver todas las fotografías.
+            </p>
+          </div>
+
+          <span className="text-sm text-zinc-500">
+            {progressPhotos.length}{" "}
+            {progressPhotos.length === 1 ? "sesión" : "sesiones"}
+          </span>
+        </div>
 
         {loading ? (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center text-zinc-400">
@@ -374,21 +388,35 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             <p className="font-semibold">Todavía no tienes fotografías.</p>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Puedes comenzar con una foto frontal y añadir las demás después.
+              Agrega tu primera sesión de progreso.
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {progressPhotos.map((progress) => (
-              <ProgressEntry
+              <GalleryCard
                 key={progress.id}
                 progress={progress}
-                onDelete={() => handleDelete(progress.id)}
+                firstDate={progressPhotos[progressPhotos.length - 1]?.date}
+                onClick={() => setSelectedProgress(progress)}
               />
             ))}
           </div>
         )}
       </div>
+      {selectedProgress && (
+        <PhotoGalleryModal
+          progress={selectedProgress}
+          onClose={() => setSelectedProgress(null)}
+          onDelete={async () => {
+            const id = selectedProgress.id;
+
+            await handleDelete(id);
+
+            setSelectedProgress(null);
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -426,41 +454,290 @@ function PhotoInput({ label, preview, onChange }) {
   );
 }
 
-function ProgressEntry({ progress, onDelete }) {
-  return (
-    <article className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <p className="font-semibold">{formatDate(progress.date)}</p>
+function GalleryCard({ progress, onClick, firstDate }) {
+  const cover = progress.front || progress.side || progress.back;
 
-          <p className="mt-1 text-sm text-zinc-500">
-            {progress.weight
-              ? `${Number(progress.weight).toFixed(1)} kg`
-              : "Sin peso registrado"}
-          </p>
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    if (!cover) {
+      setUrl(null);
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(cover);
+
+    setUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [cover]);
+
+  const photoCount = [progress.front, progress.side, progress.back].filter(
+    Boolean,
+  ).length;
+  const days = firstDate ? getDaysBetween(firstDate, progress.date) : 0;
+
+  const weeks = Math.floor(days / 7);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 text-left transition hover:-translate-y-1 hover:border-zinc-700 hover:shadow-xl"
+    >
+      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
+        {url ? (
+          <img
+            src={url}
+            alt={`Progreso ${progress.date}`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-600">
+            <UserRound size={38} />
+          </div>
+        )}
+
+        <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+          <div className="rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">
+            {photoCount}/3
+          </div>
+
+          <div className="rounded-full bg-lime-400 px-2 py-1 text-[10px] font-bold text-black">
+            Día {days}
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onDelete}
-          className="rounded-xl p-2 text-red-400 transition hover:bg-red-500/10"
-          title="Eliminar"
-        >
-          <Trash2 size={18} />
-        </button>
+        {progress.testData && (
+          <div className="absolute left-2 top-2 rounded-full bg-violet-500/90 px-2 py-1 text-[10px] font-semibold text-white">
+            TEST
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-12">
+          <p className="text-base font-bold text-white">
+            {progress.weight
+              ? `${Number(progress.weight).toFixed(1)} kg`
+              : "Sin peso"}
+          </p>
+          <p className="text-[11px] font-semibold text-lime-300">
+            Semana {weeks}
+          </p>
+
+          <p className="mt-0.5 text-xs text-zinc-300">
+            {formatDate(progress.date)}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+function PhotoGalleryModal({ progress, onClose, onDelete }) {
+  const [activePosition, setActivePosition] = useState(
+    progress.front ? "front" : progress.side ? "side" : "back",
+  );
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const positions = [
+    {
+      key: "front",
+      label: "Frontal",
+    },
+    {
+      key: "side",
+      label: "Lateral",
+    },
+    {
+      key: "back",
+      label: "Espalda",
+    },
+  ];
+
+  const activeFile = progress[activePosition];
+
+  return (
+    <div
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 p-5 backdrop-blur">
+          <div>
+            <h3 className="text-xl font-bold">{formatDate(progress.date)}</h3>
+
+            <p className="mt-1 text-sm text-zinc-400">
+              {progress.weight
+                ? `${Number(progress.weight).toFixed(1)} kg`
+                : "Sin peso registrado"}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="p-5">
+          <div className="mb-5 flex justify-center">
+            <div className="inline-flex overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
+              {positions.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!progress[key]}
+                  onClick={() => setActivePosition(key)}
+                  className={`px-4 py-2 text-sm font-semibold transition ${
+                    activePosition === key
+                      ? "bg-lime-400 text-black"
+                      : "text-zinc-400 hover:text-white"
+                  } disabled:cursor-not-allowed disabled:opacity-30`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-auto max-w-lg">
+            <ModalStoredPhoto
+              file={activeFile}
+              label={
+                positions.find((item) => item.key === activePosition)?.label
+              }
+            />
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {positions.map(({ key, label }) => (
+              <GalleryThumbnail
+                key={key}
+                file={progress[key]}
+                label={label}
+                selected={activePosition === key}
+                onClick={() => progress[key] && setActivePosition(key)}
+              />
+            ))}
+          </div>
+
+          <div className="mt-6 flex justify-end border-t border-zinc-800 pt-5">
+            <button
+              type="button"
+              onClick={onDelete}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-semibold text-red-400 transition hover:bg-red-500/20"
+            >
+              <Trash2 size={18} />
+              Eliminar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function GalleryThumbnail({ file, label, selected, onClick }) {
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    setUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  return (
+    <button
+      type="button"
+      disabled={!file}
+      onClick={onClick}
+      className={`overflow-hidden rounded-xl border text-left transition ${
+        selected ? "border-lime-400" : "border-zinc-800 hover:border-zinc-600"
+      } disabled:opacity-30`}
+    >
+      <div className="aspect-[4/3] bg-zinc-950">
+        {url ? (
+          <img src={url} alt={label} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-600">
+            <UserRound size={26} />
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StoredPhoto file={progress.front} label="Frontal" />
-
-        <StoredPhoto file={progress.side} label="Lateral" />
-
-        <StoredPhoto file={progress.back} label="Espalda" />
-      </div>
-    </article>
+      <p className="p-2 text-center text-xs font-semibold text-zinc-400">
+        {label}
+      </p>
+    </button>
   );
 }
 
+function ModalStoredPhoto({ file, label }) {
+  const [url, setUrl] = useState(null);
+
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    setUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  if (!url) {
+    return (
+      <div className="flex aspect-[3/4] items-center justify-center rounded-2xl bg-zinc-950 text-zinc-600">
+        Sin fotografía
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt={label}
+      className="max-h-[62vh] w-full rounded-2xl bg-black object-contain"
+    />
+  );
+}
 function StoredPhoto({ file, label }) {
   const [url, setUrl] = useState(null);
 
@@ -536,4 +813,11 @@ function formatDate(date) {
     month: "long",
     year: "numeric",
   });
+}
+function getDaysBetween(firstDate, currentDate) {
+  const first = new Date(`${firstDate}T00:00:00`);
+
+  const current = new Date(`${currentDate}T00:00:00`);
+
+  return Math.max(0, Math.round((current - first) / (1000 * 60 * 60 * 24)));
 }
