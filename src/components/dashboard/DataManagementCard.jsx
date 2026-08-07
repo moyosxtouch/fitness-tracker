@@ -12,6 +12,7 @@ import {
   ImageUp,
   Trash2,
   Upload,
+  TestTube2,
 } from "lucide-react";
 
 export default function DataManagementCard({
@@ -19,6 +20,7 @@ export default function DataManagementCard({
   settings,
   onImportData,
   onDeleteAllData,
+  onGenerateTestData,
 }) {
   const fileInputRef = useRef(null);
   const photoBackupInputRef = useRef(null);
@@ -521,6 +523,13 @@ export default function DataManagementCard({
           title="Respaldo completo"
           description="Descarga registros, configuración y fotografías en un solo ZIP."
           className="bg-lime-400 text-black hover:bg-lime-300"
+        />
+        <ActionButton
+          onClick={onGenerateTestData}
+          icon={<TestTube2 size={19} />}
+          title="Generar datos de prueba"
+          description="Crea 365 días simulados para probar gráficas y estadísticas."
+          className="border border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
         />
       </div>
 

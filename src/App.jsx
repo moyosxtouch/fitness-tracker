@@ -14,6 +14,7 @@ import PerformanceCard from "./components/performance/PerformanceCard";
 import HistoryCard from "./components/history/HistoryCard";
 import SettingsModal from "./components/dashboard/SettingsModal";
 import ProgressPhotosCard from "./components/dashboard/ProgressPhotosCard";
+import { generateTestData } from "./utils/generateTestData";
 const RECORDS_STORAGE_KEY = "fitness-tracker-records";
 const SETTINGS_STORAGE_KEY = "fitness-tracker-settings";
 
@@ -132,7 +133,29 @@ function App() {
 
     setEditingRecord(null);
   }
+  function loadTestData() {
+    const confirmed = window.confirm(
+      "Esto reemplazará tus registros actuales por 365 registros de prueba. ¿Continuar?",
+    );
 
+    if (!confirmed) {
+      return;
+    }
+
+    const testRecords = generateTestData(365, {
+      startWeight: 94,
+      endWeight: 69.5,
+    });
+
+    setRecords(testRecords);
+    setEditingRecord(null);
+
+    showToast({
+      title: "Datos de prueba generados",
+      message: "Se crearon 365 registros para probar la aplicación.",
+      type: "info",
+    });
+  }
   function deleteAllData() {
     setRecords([]);
     setEditingRecord(null);
@@ -225,6 +248,7 @@ function App() {
             settings={settings}
             onImportData={importData}
             onDeleteAllData={deleteAllData}
+            onGenerateTestData={loadTestData}
           />
         </section>
 
