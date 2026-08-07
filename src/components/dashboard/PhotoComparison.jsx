@@ -8,14 +8,20 @@ export default function PhotoComparison({ progressPhotos }) {
 
   useEffect(() => {
     if (progressPhotos.length < 2) {
+      setBeforeId("");
+      setAfterId("");
       return;
     }
 
-    if (!beforeId) {
+    const beforeExists = progressPhotos.some((item) => item.id === beforeId);
+
+    const afterExists = progressPhotos.some((item) => item.id === afterId);
+
+    if (!beforeExists) {
       setBeforeId(progressPhotos[progressPhotos.length - 1].id);
     }
 
-    if (!afterId) {
+    if (!afterExists) {
       setAfterId(progressPhotos[0].id);
     }
   }, [progressPhotos, beforeId, afterId]);

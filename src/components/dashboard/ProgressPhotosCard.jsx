@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Camera, ImagePlus, Trash2, UserRound } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
-
+import { generateTestPhotos } from "../../utils/generateTestPhotos";
 import {
   deleteProgressPhoto,
   getProgressPhotos,
@@ -64,6 +64,61 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       });
     } finally {
       setLoading(false);
+    }
+  }
+  async function handleGenerateTestPhotos() {
+    const confirmed = window.confirm(
+      "¿Generar 5 registros fotográficos de prueba?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const generatedRecords = await generateTestPhotos();
+
+      if (generatedRecords.length === 0) {
+        onShowToast?.({
+          title: "Fotos de prueba existentes",
+
+          message: "Los 5 registros de prueba ya estaban guardados.",
+
+          type: "info",
+        });
+
+        return;
+      }
+
+      setProgressPhotos((previousPhotos) => {
+        const combined = [...generatedRecords, ...previousPhotos];
+
+        const unique = combined.filter(
+          (item, index, array) =>
+            index === array.findIndex((other) => other.id === item.id),
+        );
+
+        return unique.sort((a, b) => b.date.localeCompare(a.date));
+      });
+
+      onShowToast?.({
+        title: "Fotos de prueba generadas",
+
+        message: `Se agregaron ${generatedRecords.length} sesiones fotográficas.`,
+
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Error generando fotografías de prueba:", error);
+
+      onShowToast?.({
+        title: "Error al generar fotos",
+
+        message:
+          error.message || "No se pudieron generar las fotografías de prueba.",
+
+        type: "error",
+      });
     }
   }
 
@@ -293,6 +348,13 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         >
           <ImagePlus size={19} />
           Guardar fotografías
+        </button>
+        <button
+          type="button"
+          onClick={handleGenerateTestPhotos}
+          className="mt-3 w-full rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 font-semibold text-violet-300 transition hover:bg-violet-500/20"
+        >
+          🧪 Generar 5 fotos de prueba
         </button>
       </form>
       <div className="mb-8">
