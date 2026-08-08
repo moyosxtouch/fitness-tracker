@@ -643,18 +643,6 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
             />
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {positions.map(({ key, label }) => (
-              <GalleryThumbnail
-                key={key}
-                file={progress[key]}
-                label={label}
-                selected={activePosition === key}
-                onClick={() => progress[key] && setActivePosition(key)}
-              />
-            ))}
-          </div>
-
           <div className="mt-6 flex justify-end border-t border-zinc-800 pt-5">
             <button
               type="button"
@@ -668,49 +656,6 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
         </div>
       </div>
     </div>
-  );
-}
-function GalleryThumbnail({ file, label, selected, onClick }) {
-  const [url, setUrl] = useState(null);
-
-  useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return undefined;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-
-    setUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [file]);
-
-  return (
-    <button
-      type="button"
-      disabled={!file}
-      onClick={onClick}
-      className={`overflow-hidden rounded-xl border text-left transition ${
-        selected ? "border-lime-400" : "border-zinc-800 hover:border-zinc-600"
-      } disabled:opacity-30`}
-    >
-      <div className="aspect-[4/3] bg-zinc-950">
-        {url ? (
-          <img src={url} alt={label} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-zinc-600">
-            <UserRound size={26} />
-          </div>
-        )}
-      </div>
-
-      <p className="p-2 text-center text-xs font-semibold text-zinc-400">
-        {label}
-      </p>
-    </button>
   );
 }
 
