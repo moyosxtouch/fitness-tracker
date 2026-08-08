@@ -401,15 +401,12 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 "
           >
             {progressPhotos.map((progress) => (
-              <div
+              <GalleryCard
                 key={progress.id}
-                className="w-[72vw] max-w-[260px] shrink-0 snap-start md:w-auto md:max-w-none"
-              >
-                <GalleryCard
-                  progress={progress}
-                  onClick={() => setSelectedProgress(progress)}
-                />
-              </div>
+                progress={progress}
+                progressPhotos={progressPhotos}
+                onClick={() => setSelectedProgress(progress)}
+              />
             ))}
           </div>
         )}
@@ -464,7 +461,7 @@ function PhotoInput({ label, preview, onChange }) {
   );
 }
 
-function GalleryCard({ progress, onClick, firstDate }) {
+function GalleryCard({ progress, onClick, progressPhotos }) {
   const cover = progress.front || progress.side || progress.back;
 
   const [url, setUrl] = useState(null);
@@ -487,7 +484,15 @@ function GalleryCard({ progress, onClick, firstDate }) {
   const photoCount = [progress.front, progress.side, progress.back].filter(
     Boolean,
   ).length;
-  const days = firstDate ? getDaysBetween(firstDate, progress.date) : 0;
+  const oldestDate =
+    progressPhotos.length > 0
+      ? progressPhotos.reduce(
+          (oldest, item) => (item.date < oldest ? item.date : oldest),
+          progressPhotos[0].date,
+        )
+      : progress.date;
+
+  const days = getDaysBetween(oldestDate, progress.date);
 
   const weeks = Math.floor(days / 7);
   return (
@@ -774,5 +779,7 @@ function getDaysBetween(firstDate, currentDate) {
 
   const current = new Date(`${currentDate}T00:00:00`);
 
-  return Math.max(0, Math.round((current - first) / (1000 * 60 * 60 * 24)));
+  const difference = current.getTime() - first.getTime();
+
+  return Math.max(0, Math.round(difference / (1000 * 60 * 60 * 24)));
 }
