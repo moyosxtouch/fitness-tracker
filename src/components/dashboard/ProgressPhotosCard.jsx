@@ -392,14 +392,24 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div
+            className="
+  flex gap-3 overflow-x-auto pb-3
+  snap-x snap-mandatory
+  md:grid md:grid-cols-4 md:overflow-visible md:pb-0
+  lg:grid-cols-5
+"
+          >
             {progressPhotos.map((progress) => (
-              <GalleryCard
+              <div
                 key={progress.id}
-                progress={progress}
-                firstDate={progressPhotos[progressPhotos.length - 1]?.date}
-                onClick={() => setSelectedProgress(progress)}
-              />
+                className="w-[72vw] max-w-[260px] shrink-0 snap-start md:w-auto md:max-w-none"
+              >
+                <GalleryCard
+                  progress={progress}
+                  onClick={() => setSelectedProgress(progress)}
+                />
+              </div>
             ))}
           </div>
         )}
