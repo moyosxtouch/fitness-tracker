@@ -266,8 +266,10 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
               <MobileRecordCard
                 key={record.id}
                 record={record}
-                onOpen={() => ssetSelectedRecord(record);
-setIsEditing(false);}
+                onOpen={() => {
+                  setSelectedRecord(record);
+                  setIsEditing(false);
+                }}
               />
             ))}
           </div>
@@ -311,29 +313,23 @@ setIsEditing(false);}
       )}
 
       {selectedRecord && (
-     <RecordDetailModal
-  record={selectedRecord}
-  isEditing={isEditing}
-  onStartEdit={() =>
-    setIsEditing(true)
-  }
-  onCancelEdit={() =>
-    setIsEditing(false)
-  }
-  onClose={() => {
-    setSelectedRecord(null);
-    setIsEditing(false);
-  }}
-  onSave={(updatedRecord) => {
-    onSaveRecord(updatedRecord);
+        <RecordDetailModal
+          record={selectedRecord}
+          isEditing={isEditing}
+          onStartEdit={() => setIsEditing(true)}
+          onCancelEdit={() => setIsEditing(false)}
+          onClose={() => {
+            setSelectedRecord(null);
+            setIsEditing(false);
+          }}
+          onSave={(updatedRecord) => {
+            onSaveRecord(updatedRecord);
 
-    setSelectedRecord(updatedRecord);
-    setIsEditing(false);
-  }}
-  onDelete={() =>
-    handleDelete(selectedRecord)
-  }
-/>
+            setSelectedRecord(updatedRecord);
+            setIsEditing(false);
+          }}
+          onDelete={() => handleDelete(selectedRecord)}
+        />
       )}
     </section>
   );
@@ -419,9 +415,7 @@ function RecordDetailModal({
   onSave,
   onDelete,
 }) {
-  const [form, setForm] = useState(() =>
-    createEditForm(record)
-  );
+  const [form, setForm] = useState(() => createEditForm(record));
 
   useEffect(() => {
     setForm(createEditForm(record));
@@ -438,32 +432,19 @@ function RecordDetailModal({
       }
     }
 
-    document.addEventListener(
-      "keydown",
-      handleKeyDown
-    );
+    document.addEventListener("keydown", handleKeyDown);
 
-    document.body.style.overflow =
-      "hidden";
+    document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
+      document.removeEventListener("keydown", handleKeyDown);
 
-      document.body.style.overflow =
-        "";
+      document.body.style.overflow = "";
     };
-  }, [
-    isEditing,
-    onCancelEdit,
-    onClose,
-  ]);
+  }, [isEditing, onCancelEdit, onClose]);
 
   function handleChange(event) {
-    const { name, value } =
-      event.target;
+    const { name, value } = event.target;
 
     setForm((previousForm) => ({
       ...previousForm,
@@ -474,21 +455,13 @@ function RecordDetailModal({
   function handleSubmit(event) {
     event.preventDefault();
 
-    const calories =
-      Number(form.calories);
+    const calories = Number(form.calories);
 
-    const weight =
-      Number(form.weight);
+    const weight = Number(form.weight);
 
-    const sleepHours =
-      form.sleepHours !== ""
-        ? Number(form.sleepHours)
-        : null;
+    const sleepHours = form.sleepHours !== "" ? Number(form.sleepHours) : null;
 
-    const recovery =
-      form.recovery !== ""
-        ? Number(form.recovery)
-        : null;
+    const recovery = form.recovery !== "" ? Number(form.recovery) : null;
 
     if (
       !form.date ||
@@ -497,39 +470,25 @@ function RecordDetailModal({
       !Number.isFinite(weight) ||
       weight <= 0
     ) {
-      alert(
-        "Introduce fecha, calorías y peso válidos."
-      );
+      alert("Introduce fecha, calorías y peso válidos.");
 
       return;
     }
 
     if (
       sleepHours !== null &&
-      (
-        !Number.isFinite(sleepHours) ||
-        sleepHours < 0 ||
-        sleepHours > 24
-      )
+      (!Number.isFinite(sleepHours) || sleepHours < 0 || sleepHours > 24)
     ) {
-      alert(
-        "Las horas de sueño deben estar entre 0 y 24."
-      );
+      alert("Las horas de sueño deben estar entre 0 y 24.");
 
       return;
     }
 
     if (
       recovery !== null &&
-      (
-        !Number.isFinite(recovery) ||
-        recovery < 1 ||
-        recovery > 10
-      )
+      (!Number.isFinite(recovery) || recovery < 1 || recovery > 10)
     ) {
-      alert(
-        "La recuperación debe estar entre 1 y 10."
-      );
+      alert("La recuperación debe estar entre 1 y 10.");
 
       return;
     }
@@ -539,8 +498,7 @@ function RecordDetailModal({
       date: form.date,
       calories,
       weight,
-      performance:
-        form.performance,
+      performance: form.performance,
       sleepHours,
       recovery,
       notes: form.notes.trim(),
@@ -551,11 +509,7 @@ function RecordDetailModal({
     <div
       className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
-        if (
-          event.target ===
-          event.currentTarget &&
-          !isEditing
-        ) {
+        if (event.target === event.currentTarget && !isEditing) {
           onClose();
         }
       }}
@@ -564,25 +518,17 @@ function RecordDetailModal({
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-zinc-800 bg-zinc-900/95 p-4 backdrop-blur sm:p-5">
           <div>
             <p className="text-sm text-zinc-500">
-              {isEditing
-                ? "Editar registro"
-                : "Registro diario"}
+              {isEditing ? "Editar registro" : "Registro diario"}
             </p>
 
             <h3 className="mt-1 text-xl font-bold sm:text-2xl">
-              {formatLongDate(
-                record.date
-              )}
+              {formatLongDate(record.date)}
             </h3>
           </div>
 
           <button
             type="button"
-            onClick={
-              isEditing
-                ? onCancelEdit
-                : onClose
-            }
+            onClick={isEditing ? onCancelEdit : onClose}
             className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
           >
             <X size={22} />
@@ -590,10 +536,7 @@ function RecordDetailModal({
         </div>
 
         {isEditing ? (
-          <form
-            onSubmit={handleSubmit}
-            className="p-4 sm:p-5"
-          >
+          <form onSubmit={handleSubmit} className="p-4 sm:p-5">
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <EditField
                 label="Fecha"
@@ -627,27 +570,17 @@ function RecordDetailModal({
 
                 <select
                   name="performance"
-                  value={
-                    form.performance
-                  }
+                  value={form.performance}
                   onChange={handleChange}
                   className="min-h-11 rounded-xl border border-zinc-700 bg-zinc-800 p-3 text-base outline-none focus:border-lime-400"
                 >
-                  <option value="Óptimo">
-                    Óptimo
-                  </option>
+                  <option value="Óptimo">Óptimo</option>
 
-                  <option value="Regular">
-                    Regular
-                  </option>
+                  <option value="Regular">Regular</option>
 
-                  <option value="Fallido">
-                    Fallido
-                  </option>
+                  <option value="Fallido">Fallido</option>
 
-                  <option value="Descanso">
-                    Descanso
-                  </option>
+                  <option value="Descanso">Descanso</option>
                 </select>
               </label>
 
@@ -707,41 +640,26 @@ function RecordDetailModal({
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <DetailBox
                 label="Calorías"
-                value={`${Number(
-                  record.calories
-                ).toLocaleString(
-                  "es-MX"
+                value={`${Number(record.calories).toLocaleString(
+                  "es-MX",
                 )} kcal`}
               />
 
               <DetailBox
                 label="Peso"
-                value={`${Number(
-                  record.weight
-                ).toFixed(
-                  1
-                )} kg`}
+                value={`${Number(record.weight).toFixed(1)} kg`}
               />
 
               <DetailBox
                 label="Rendimiento"
-                value={
-                  record.performance ||
-                  "Sin registro"
-                }
+                value={record.performance || "Sin registro"}
               />
 
               <DetailBox
                 label="Sueño"
                 value={
-                  isValidNumber(
-                    record.sleepHours
-                  )
-                    ? `${Number(
-                        record.sleepHours
-                      ).toFixed(
-                        1
-                      )} h`
+                  isValidNumber(record.sleepHours)
+                    ? `${Number(record.sleepHours).toFixed(1)} h`
                     : "Sin dato"
                 }
               />
@@ -749,12 +667,8 @@ function RecordDetailModal({
               <DetailBox
                 label="Recuperación"
                 value={
-                  isValidNumber(
-                    record.recovery
-                  )
-                    ? `${Number(
-                        record.recovery
-                      )}/10`
+                  isValidNumber(record.recovery)
+                    ? `${Number(record.recovery)}/10`
                     : "Sin dato"
                 }
               />
@@ -766,8 +680,7 @@ function RecordDetailModal({
               </p>
 
               <p className="mt-2 text-sm leading-relaxed text-zinc-300 sm:text-base">
-                {record.notes ||
-                  "Sin notas registradas."}
+                {record.notes || "Sin notas registradas."}
               </p>
             </div>
 
@@ -796,15 +709,7 @@ function RecordDetailModal({
     </div>
   );
 }
-function EditField({
-  label,
-  type,
-  name,
-  value,
-  onChange,
-  step,
-  placeholder,
-}) {
+function EditField({ label, type, name, value, onChange, step, placeholder }) {
   return (
     <label className="grid gap-1">
       <span className="text-xs uppercase tracking-wide text-zinc-500">
@@ -827,29 +732,18 @@ function EditField({
 function createEditForm(record) {
   return {
     date: record.date,
-    calories:
-      record.calories !== undefined
-        ? String(record.calories)
-        : "",
-    weight:
-      record.weight !== undefined
-        ? String(record.weight)
-        : "",
-    performance:
-      record.performance ||
-      "Óptimo",
+    calories: record.calories !== undefined ? String(record.calories) : "",
+    weight: record.weight !== undefined ? String(record.weight) : "",
+    performance: record.performance || "Óptimo",
     sleepHours:
-      record.sleepHours !== null &&
-      record.sleepHours !== undefined
+      record.sleepHours !== null && record.sleepHours !== undefined
         ? String(record.sleepHours)
         : "",
     recovery:
-      record.recovery !== null &&
-      record.recovery !== undefined
+      record.recovery !== null && record.recovery !== undefined
         ? String(record.recovery)
         : "",
-    notes:
-      record.notes || "",
+    notes: record.notes || "",
   };
 }
 
