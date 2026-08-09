@@ -241,7 +241,7 @@ function App() {
         <section id="historial" className="scroll-mt-24">
           <HistoryCard
             records={records}
-            onEditRecord={startEditing}
+            onSaveRecord={saveRecord}
             onDeleteRecord={deleteRecord}
           />
         </section>
