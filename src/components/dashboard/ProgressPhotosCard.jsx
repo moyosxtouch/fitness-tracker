@@ -392,7 +392,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             </p>
           </div>
         ) : (
-          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
+          <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
             {progressPhotos.map((progress) => (
               <div
                 key={progress.id}
@@ -533,7 +533,7 @@ function GalleryCard({ progress, onClick, progressPhotos }) {
           </p>
 
           <p className="mt-0.5 text-xs text-zinc-300">
-            {formatDate(progress.date)}
+            {formatShortDate(progress.date)}
           </p>
         </div>
       </div>
@@ -774,4 +774,11 @@ function getDaysBetween(firstDate, currentDate) {
   const difference = current.getTime() - first.getTime();
 
   return Math.max(0, Math.round(difference / (1000 * 60 * 60 * 24)));
+}
+function formatShortDate(date) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("es-MX", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
