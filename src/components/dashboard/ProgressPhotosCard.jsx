@@ -480,9 +480,6 @@ function GalleryCard({ progress, onClick, progressPhotos }) {
     };
   }, [cover]);
 
-  const photoCount = [progress.front, progress.side, progress.back].filter(
-    Boolean,
-  ).length;
   const oldestDate =
     progressPhotos.length > 0
       ? progressPhotos.reduce(
