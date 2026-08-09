@@ -589,8 +589,8 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
         }
       }}
     >
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 p-5 backdrop-blur">
+      <div className="flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 p-4 backdrop-blur sm:p-5">
           <div>
             <h3 className="text-xl font-bold">{formatDate(progress.date)}</h3>
 
@@ -610,8 +610,8 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
           </button>
         </div>
 
-        <div className="p-5">
-          <div className="mb-5 flex justify-center">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
+          <div className="mb-4 flex shrink-0 justify-center">
             <div className="inline-flex overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
               {positions.map(({ key, label }) => (
                 <button
@@ -631,7 +631,7 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
             </div>
           </div>
 
-          <div className="mx-auto max-w-lg">
+          <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center justify-center">
             <ModalStoredPhoto
               file={activeFile}
               label={
@@ -639,12 +639,14 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
               }
             />
           </div>
+        </div>
 
-          <div className="mt-6 flex justify-end border-t border-zinc-800 pt-5">
+        <div className="shrink-0 border-t border-zinc-800 bg-zinc-900 px-4 py-3 sm:px-5">
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-semibold text-red-400 transition hover:bg-red-500/20"
+              className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-3 font-semibold text-red-400 transition hover:bg-red-500/20"
             >
               <Trash2 size={18} />
               Eliminar sesión
@@ -676,18 +678,20 @@ function ModalStoredPhoto({ file, label }) {
 
   if (!url) {
     return (
-      <div className="flex aspect-[3/4] items-center justify-center rounded-2xl bg-zinc-950 text-zinc-600">
+      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-zinc-950 text-zinc-600">
         Sin fotografía
       </div>
     );
   }
 
   return (
-    <img
-      src={url}
-      alt={label}
-      className="max-h-[62vh] w-full rounded-2xl bg-black object-contain"
-    />
+    <div className="flex h-full w-full min-h-0 items-center justify-center">
+      <img
+        src={url}
+        alt={label || "Fotografía de progreso"}
+        className="h-full max-h-full w-auto max-w-full rounded-2xl object-contain shadow-xl"
+      />
+    </div>
   );
 }
 function StoredPhoto({ file, label }) {
