@@ -21,7 +21,7 @@ const SETTINGS_STORAGE_KEY = "fitness-tracker-settings";
 const initialSettings = {
   goalCalories: 2100,
   goalWeight: 67,
-  mode: "Déficit",
+  mode: "Perder peso",
 };
 
 function App() {
@@ -197,7 +197,11 @@ function App() {
 
       <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
         <section id="inicio" className="scroll-mt-24">
-          <TodaySummary records={records} settings={settings} />
+          <TodaySummary
+            records={records}
+            settings={settings}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         </section>
 
         <section id="registro" className="scroll-mt-24">

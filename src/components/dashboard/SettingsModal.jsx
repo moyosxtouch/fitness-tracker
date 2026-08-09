@@ -139,7 +139,7 @@ export default function SettingsModal({
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm text-zinc-400">Etapa actual</span>
+            <span className="text-sm text-zinc-400">Objetivo actual</span>
 
             <select
               name="mode"
@@ -147,11 +147,11 @@ export default function SettingsModal({
               onChange={handleChange}
               className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none transition focus:border-lime-400"
             >
-              <option value="Déficit">Déficit</option>
+              <option value="Perder peso">Perder peso</option>
 
-              <option value="Mantenimiento">Mantenimiento</option>
+              <option value="Mantener peso">Mantener peso</option>
 
-              <option value="Superávit">Superávit</option>
+              <option value="Ganar peso">Ganar peso</option>
             </select>
           </label>
 

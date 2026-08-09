@@ -1,13 +1,15 @@
 import {
-  Brain,
+  Activity,
+  ArrowDown,
+  ArrowUp,
   Dumbbell,
   Flame,
   Minus,
   Moon,
   Scale,
-  TrendingDown,
-  TrendingUp,
 } from "lucide-react";
+
+import { getWeightTrend } from "../../utils/weightTrend";
 
 export default function InsightsCard({ records }) {
   const sortedRecords = [...records]
@@ -18,6 +20,8 @@ export default function InsightsCard({ records }) {
     return null;
   }
 
+  const trend = getWeightTrend(records);
+
   const calorieRecords = sortedRecords.filter((record) =>
     Number.isFinite(Number(record.calories)),
   );
@@ -26,7 +30,6 @@ export default function InsightsCard({ records }) {
     Number.isFinite(Number(record.weight)),
   );
 
-  // Descanso no cuenta como una sesión de gimnasio.
   const trainingRecords = sortedRecords.filter(
     (record) =>
       record.performance === "Óptimo" ||
@@ -59,7 +62,7 @@ export default function InsightsCard({ records }) {
       ? Number(weightRecords[weightRecords.length - 1].weight)
       : null;
 
-  const weightDifference =
+  const totalWeightChange =
     firstWeight !== null && latestWeight !== null
       ? Number((latestWeight - firstWeight).toFixed(1))
       : 0;
@@ -91,7 +94,7 @@ export default function InsightsCard({ records }) {
   return (
     <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
       <div className="mb-6 flex items-center gap-3">
-        <Brain className="text-lime-400" size={28} />
+        <Activity size={28} className="text-lime-400" />
 
         <div>
           <h2 className="text-2xl font-bold">Insights</h2>
@@ -102,7 +105,7 @@ export default function InsightsCard({ records }) {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Insight
           icon={<Flame size={24} />}
           title="Promedio calórico"
@@ -112,13 +115,21 @@ export default function InsightsCard({ records }) {
         />
 
         <Insight
-          icon={<WeightIcon difference={weightDifference} />}
-          title="Cambio de peso"
-          value={`${weightDifference > 0 ? "+" : ""}${weightDifference.toFixed(
+          icon={<Scale size={24} />}
+          title="Cambio total"
+          value={`${totalWeightChange > 0 ? "+" : ""}${totalWeightChange.toFixed(
             1,
           )} kg`}
-          description={getWeightMessage(weightDifference)}
-          iconClass={getWeightIconClass(weightDifference)}
+          description={getTotalWeightMessage(totalWeightChange)}
+          iconClass={getTotalWeightColor(totalWeightChange)}
+        />
+
+        <Insight
+          icon={getTrendIcon(trend.status)}
+          title="Tendencia reciente"
+          value={trend.label}
+          description={getTrendMessage(trend)}
+          iconClass={getTrendColor(trend.status)}
         />
 
         <Insight
@@ -170,7 +181,8 @@ export default function InsightsCard({ records }) {
 
           <p className="text-lg leading-relaxed">
             {buildSummary({
-              weightDifference,
+              totalWeightChange,
+              trend,
               optimalPercentage,
               optimalAverageCalories,
               averageCalories,
@@ -180,8 +192,8 @@ export default function InsightsCard({ records }) {
           </p>
 
           <p className="mt-3 text-xs text-zinc-500">
-            Los días de descanso cuentan para calorías y peso, pero no modifican
-            el porcentaje de rendimiento del gimnasio.
+            El cambio total compara tu primer y último registro. La tendencia
+            reciente se calcula por separado usando promedios semanales.
           </p>
         </div>
       </div>
@@ -202,49 +214,82 @@ function Insight({ icon, title, value, description, iconClass }) {
 
       <p className="mt-1 text-2xl font-bold">{value}</p>
 
-      <p className="mt-2 text-xs text-zinc-500">{description}</p>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        {description}
+      </p>
     </div>
   );
 }
 
-function WeightIcon({ difference }) {
-  if (difference < 0) {
-    return <TrendingDown size={24} />;
+function getTrendIcon(status) {
+  if (status === "down") {
+    return <ArrowDown size={24} />;
   }
 
-  if (difference > 0) {
-    return <TrendingUp size={24} />;
+  if (status === "up") {
+    return <ArrowUp size={24} />;
   }
 
   return <Minus size={24} />;
 }
 
-function getWeightIconClass(difference) {
+function getTrendColor(status) {
+  if (status === "down") {
+    return "bg-emerald-500/15 text-emerald-400";
+  }
+
+  if (status === "up") {
+    return "bg-violet-500/15 text-violet-400";
+  }
+
+  if (status === "stable") {
+    return "bg-sky-500/15 text-sky-400";
+  }
+
+  return "bg-zinc-800 text-zinc-500";
+}
+
+function getTrendMessage(trend) {
+  if (trend.status === "insufficient") {
+    return "Recopilando suficientes semanas";
+  }
+
+  if (trend.weeklyChange === null) {
+    return "Sin cambio estimado";
+  }
+
+  const sign = trend.weeklyChange > 0 ? "+" : "";
+
+  return `${sign}${trend.weeklyChange.toFixed(2)} kg/sem estimados`;
+}
+
+function getTotalWeightColor(difference) {
   if (difference < 0) {
     return "bg-emerald-500/15 text-emerald-400";
   }
 
   if (difference > 0) {
-    return "bg-amber-500/15 text-amber-400";
+    return "bg-violet-500/15 text-violet-400";
   }
 
   return "bg-zinc-800 text-zinc-400";
 }
 
-function getWeightMessage(difference) {
+function getTotalWeightMessage(difference) {
   if (difference < 0) {
-    return "Tendencia descendente";
+    return "Desde tu primer registro";
   }
 
   if (difference > 0) {
-    return "Tendencia ascendente";
+    return "Desde tu primer registro";
   }
 
-  return "Peso estable";
+  return "Sin cambio acumulado";
 }
 
 function buildSummary({
-  weightDifference,
+  totalWeightChange,
+  trend,
   optimalPercentage,
   optimalAverageCalories,
   averageCalories,
@@ -252,15 +297,22 @@ function buildSummary({
   restCount,
 }) {
   const weightText =
-    weightDifference < 0
-      ? `Has bajado ${Math.abs(weightDifference).toFixed(
-          1,
-        )} kg desde tu primer registro.`
-      : weightDifference > 0
-        ? `Has subido ${weightDifference.toFixed(
+    totalWeightChange < 0
+      ? `Desde tu primer registro has bajado ${Math.abs(
+          totalWeightChange,
+        ).toFixed(1)} kg.`
+      : totalWeightChange > 0
+        ? `Desde tu primer registro has subido ${totalWeightChange.toFixed(
             1,
-          )} kg desde tu primer registro.`
-        : "Tu peso se mantiene estable.";
+          )} kg.`
+        : "Tu primer y último registro tienen el mismo peso.";
+
+  const trendText =
+    trend.status === "insufficient"
+      ? "Todavía no hay suficientes semanas para determinar una tendencia reciente."
+      : `La tendencia reciente es ${trend.label.toLowerCase()}, con un cambio estimado de ${
+          trend.weeklyChange > 0 ? "+" : ""
+        }${trend.weeklyChange.toFixed(2)} kg por semana.`;
 
   const performanceText =
     trainingCount === 0
@@ -282,5 +334,5 @@ function buildSummary({
         } registrado${restCount === 1 ? "" : "s"}.`
       : "";
 
-  return `${weightText} ${performanceText} ${caloriesText} ${restText}`.trim();
+  return `${weightText} ${trendText} ${performanceText} ${caloriesText} ${restText}`.trim();
 }

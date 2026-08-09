@@ -136,25 +136,22 @@ export default function WeeklyComparisonCard({ records }) {
         />
 
         <ComparisonCard
-          icon={<CalendarRange size={23} />}
-          title="Rendimiento óptimo"
+          icon={<Scale size={23} />}
+          title="Peso promedio"
           currentValue={
-            currentTrainingCount
-              ? `${currentOptimalPercentage}%`
-              : "Sin entrenamientos"
+            currentWeightAverage
+              ? `${currentWeightAverage.toFixed(2)} kg`
+              : "Sin datos"
           }
           previousValue={
-            previousTrainingCount
-              ? `${previousOptimalPercentage}%`
-              : "Sin entrenamientos"
+            previousWeightAverage
+              ? `${previousWeightAverage.toFixed(2)} kg`
+              : "Sin datos"
           }
-          difference={
-            currentTrainingCount && previousTrainingCount
-              ? performanceDifference
-              : 0
-          }
-          differenceSuffix="puntos"
-          iconClass="bg-emerald-500/15 text-emerald-400"
+          difference={weightDifference}
+          differenceSuffix="kg"
+          iconClass="bg-sky-500/15 text-sky-400"
+          neutralDifference
         />
       </div>
 
@@ -205,7 +202,7 @@ function ComparisonCard({
   difference,
   differenceSuffix,
   iconClass,
-  inverseColors = false,
+  neutralDifference = false,
 }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
@@ -226,7 +223,7 @@ function ComparisonCard({
       <Difference
         value={difference}
         suffix={differenceSuffix}
-        inverseColors={inverseColors}
+        neutral={neutralDifference}
       />
     </div>
   );
@@ -251,7 +248,7 @@ function RestSummary({ title, trainingCount, restDays }) {
   );
 }
 
-function Difference({ value, suffix, inverseColors }) {
+function Difference({ value, suffix, neutral = false }) {
   if (!value) {
     return (
       <div className="mt-3 flex items-center gap-1 text-sm text-zinc-500">
@@ -263,17 +260,16 @@ function Difference({ value, suffix, inverseColors }) {
 
   const isPositive = value > 0;
 
-  let colorClass;
-
-  if (inverseColors) {
-    colorClass = isPositive ? "text-amber-400" : "text-emerald-400";
-  } else {
-    colorClass = isPositive ? "text-emerald-400" : "text-amber-400";
-  }
+  const colorClass = neutral
+    ? "text-sky-400"
+    : isPositive
+      ? "text-emerald-400"
+      : "text-amber-400";
 
   return (
     <div className={`mt-3 flex items-center gap-1 text-sm ${colorClass}`}>
       {isPositive ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+      {isPositive ? "+" : ""}
       {Math.abs(value).toLocaleString("es-MX")} {suffix}
     </div>
   );
@@ -355,11 +351,15 @@ function buildWeeklySummary({
         : "Tu promedio calórico se mantiene igual.";
 
   const weightText =
-    weightDifference < -0.1
-      ? `El peso promedio bajó ${Math.abs(weightDifference).toFixed(2)} kg.`
-      : weightDifference > 0.1
-        ? `El peso promedio subió ${weightDifference.toFixed(2)} kg.`
-        : "El peso promedio se mantiene estable.";
+    weightDifference < 0
+      ? `El promedio semanal fue ${Math.abs(weightDifference).toFixed(
+          2,
+        )} kg menor que la semana anterior.`
+      : weightDifference > 0
+        ? `El promedio semanal fue ${weightDifference.toFixed(
+            2,
+          )} kg mayor que la semana anterior.`
+        : "El promedio semanal fue igual al de la semana anterior.";
 
   let performanceText;
 

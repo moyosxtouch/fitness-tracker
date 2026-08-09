@@ -16,6 +16,8 @@ function createEmptyForm() {
     calories: "",
     weight: "",
     performance: "Óptimo",
+    sleepHours: "",
+    recovery: "",
     notes: "",
   };
 }
@@ -35,6 +37,17 @@ export default function AddRecordCard({
         calories: String(editingRecord.calories),
         weight: String(editingRecord.weight),
         performance: editingRecord.performance || "Óptimo",
+        sleepHours:
+          editingRecord.sleepHours !== null &&
+          editingRecord.sleepHours !== undefined
+            ? String(editingRecord.sleepHours)
+            : "",
+
+        recovery:
+          editingRecord.recovery !== null &&
+          editingRecord.recovery !== undefined
+            ? String(editingRecord.recovery)
+            : "",
         notes: editingRecord.notes || "",
       });
     } else {
@@ -71,6 +84,25 @@ export default function AddRecordCard({
       alert("Introduce valores válidos.");
       return;
     }
+    const sleepHours = form.sleepHours !== "" ? Number(form.sleepHours) : null;
+
+    const recovery = form.recovery !== "" ? Number(form.recovery) : null;
+
+    if (
+      sleepHours !== null &&
+      (!Number.isFinite(sleepHours) || sleepHours < 0 || sleepHours > 24)
+    ) {
+      alert("Las horas de sueño deben estar entre 0 y 24.");
+      return;
+    }
+
+    if (
+      recovery !== null &&
+      (!Number.isFinite(recovery) || recovery < 1 || recovery > 10)
+    ) {
+      alert("La recuperación debe estar entre 1 y 10.");
+      return;
+    }
 
     onSaveRecord({
       id: form.id,
@@ -78,6 +110,8 @@ export default function AddRecordCard({
       calories,
       weight,
       performance: form.performance,
+      sleepHours,
+      recovery,
       notes: form.notes.trim(),
     });
 
@@ -177,6 +211,36 @@ export default function AddRecordCard({
             <option value="Fallido">Fallido</option>
             <option value="Descanso">Descanso</option>
           </select>
+        </label>
+        <label className="grid gap-2">
+          <span className="text-sm text-zinc-400">Horas de sueño</span>
+
+          <input
+            type="number"
+            step="0.5"
+            min="0"
+            max="24"
+            name="sleepHours"
+            placeholder="Ej. 7.5"
+            value={form.sleepHours}
+            onChange={handleChange}
+            className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
+          />
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-sm text-zinc-400">Recuperación</span>
+
+          <input
+            type="number"
+            min="1"
+            max="10"
+            name="recovery"
+            placeholder="1 a 10"
+            value={form.recovery}
+            onChange={handleChange}
+            className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
+          />
         </label>
 
         {isRestDay && (
