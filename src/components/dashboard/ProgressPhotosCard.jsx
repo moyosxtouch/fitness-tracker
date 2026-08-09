@@ -392,38 +392,37 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             </p>
           </div>
         ) : (
-          <div
-            className="
-  flex gap-3 overflow-x-auto pb-3
-  snap-x snap-mandatory
-  md:grid md:grid-cols-4 md:overflow-visible md:pb-0
-  lg:grid-cols-5
-"
-          >
+          <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
             {progressPhotos.map((progress) => (
-              <GalleryCard
+              <div
                 key={progress.id}
-                progress={progress}
-                progressPhotos={progressPhotos}
-                onClick={() => setSelectedProgress(progress)}
-              />
+                className="w-[72vw] max-w-[250px] shrink-0 snap-start md:w-auto md:max-w-none"
+              >
+                <GalleryCard
+                  progress={progress}
+                  progressPhotos={progressPhotos}
+                  onClick={() => {
+                    setSelectedProgress(progress);
+                  }}
+                />
+              </div>
             ))}
           </div>
         )}
+        {selectedProgress && (
+          <PhotoGalleryModal
+            progress={selectedProgress}
+            onClose={() => setSelectedProgress(null)}
+            onDelete={async () => {
+              const id = selectedProgress.id;
+
+              await handleDelete(id);
+
+              setSelectedProgress(null);
+            }}
+          />
+        )}
       </div>
-      {selectedProgress && (
-        <PhotoGalleryModal
-          progress={selectedProgress}
-          onClose={() => setSelectedProgress(null)}
-          onDelete={async () => {
-            const id = selectedProgress.id;
-
-            await handleDelete(id);
-
-            setSelectedProgress(null);
-          }}
-        />
-      )}
     </section>
   );
 }
