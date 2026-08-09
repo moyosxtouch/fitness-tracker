@@ -514,7 +514,7 @@ function GalleryCard({ progress, onClick, progressPhotos }) {
         )}
 
         <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
-          <div className="rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">
+          <div className="rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur md:block">
             {photoCount}/3
           </div>
 
