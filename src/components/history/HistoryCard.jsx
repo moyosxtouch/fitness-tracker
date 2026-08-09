@@ -12,6 +12,9 @@ import {
 export default function HistoryCard({ records, onEditRecord, onDeleteRecord }) {
   const [monthFilter, setMonthFilter] = useState("all");
   const [performanceFilter, setPerformanceFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const RECORDS_PER_PAGE = 7;
 
   const [selectedRecord, setSelectedRecord] = useState(null);
 
@@ -39,6 +42,25 @@ export default function HistoryCard({ records, onEditRecord, onDeleteRecord }) {
       return matchesMonth && matchesPerformance;
     });
   }, [sortedRecords, monthFilter, performanceFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [monthFilter, performanceFilter]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRecords.length / RECORDS_PER_PAGE),
+  );
+
+  const startIndex = (currentPage - 1) * RECORDS_PER_PAGE;
+
+  const endIndex = startIndex + RECORDS_PER_PAGE;
+
+  const paginatedRecords = filteredRecords.slice(startIndex, endIndex);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   function clearFilters() {
     setMonthFilter("all");
@@ -179,7 +201,7 @@ export default function HistoryCard({ records, onEditRecord, onDeleteRecord }) {
               </thead>
 
               <tbody>
-                {filteredRecords.map((record) => (
+                {paginatedRecords.map((record) => (
                   <tr
                     key={record.id}
                     className="border-t border-zinc-800 transition hover:bg-zinc-800/40"
@@ -218,7 +240,7 @@ export default function HistoryCard({ records, onEditRecord, onDeleteRecord }) {
 
           {/* MÓVIL */}
           <div className="grid gap-3 md:hidden">
-            {filteredRecords.map((record) => (
+            {paginatedRecords.map((record) => (
               <MobileRecordCard
                 key={record.id}
                 record={record}
@@ -227,6 +249,42 @@ export default function HistoryCard({ records, onEditRecord, onDeleteRecord }) {
             ))}
           </div>
         </>
+      )}
+      {filteredRecords.length > RECORDS_PER_PAGE && (
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-zinc-800 pt-5 sm:flex-row">
+          <p className="text-sm text-zinc-500">
+            Mostrando {startIndex + 1}–
+            {Math.min(endIndex, filteredRecords.length)} de{" "}
+            {filteredRecords.length}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              className="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+
+            <span className="px-2 text-sm text-zinc-400">
+              Página <strong className="text-white">{currentPage}</strong> de{" "}
+              {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
       )}
 
       {selectedRecord && (
