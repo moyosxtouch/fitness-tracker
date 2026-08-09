@@ -399,15 +399,15 @@ function RecordDetailModal({ record, onClose, onEdit, onDelete }) {
       }}
     >
       <div className="w-full max-w-xl overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-zinc-800 p-5">
+        <div className="flex items-start justify-between border-b border-zinc-800 p-4 sm:p-5">
+          {" "}
           <div>
             <p className="text-sm text-zinc-500">Registro diario</p>
 
-            <h3 className="mt-1 text-2xl font-bold">
+            <h3 className="mt-1 text-xl font-bold sm:text-2xl">
               {formatLongDate(record.date)}
             </h3>
           </div>
-
           <button
             type="button"
             onClick={onClose}
@@ -417,8 +417,8 @@ function RecordDetailModal({ record, onClose, onEdit, onDelete }) {
           </button>
         </div>
 
-        <div className="p-5">
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="p-4 sm:p-5">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <DetailBox
               label="Calorías"
               value={`${Number(record.calories).toLocaleString("es-MX")} kcal`}
@@ -463,7 +463,7 @@ function RecordDetailModal({ record, onClose, onEdit, onDelete }) {
             </p>
           </div>
 
-          <div className="mt-5 flex flex-col gap-3 border-t border-zinc-800 pt-5 sm:flex-row sm:justify-end">
+          <div className="mt-4 grid grid-cols-2 gap-2 border-t border-zinc-800 pt-4">
             <button
               type="button"
               onClick={onEdit}
@@ -490,10 +490,12 @@ function RecordDetailModal({ record, onClose, onEdit, onDelete }) {
 
 function DetailBox({ label, value }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
+      <p className="text-[10px] uppercase tracking-wide text-zinc-500 sm:text-xs">
+        {label}
+      </p>
 
-      <p className="mt-1 text-lg font-bold">{value}</p>
+      <p className="mt-1 text-base font-bold sm:text-lg">{value}</p>
     </div>
   );
 }
