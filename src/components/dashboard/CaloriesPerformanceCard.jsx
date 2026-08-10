@@ -1,36 +1,26 @@
 import {
+  AlertCircle,
   BarChart3,
   CheckCircle2,
-  AlertCircle,
-  XCircle,
   Flame,
+  HeartPulse,
   Moon,
+  XCircle,
 } from "lucide-react";
 
 export default function CaloriesPerformanceCard({ records }) {
   const trainingRecords = records
     .filter(
       (record) =>
-        Number.isFinite(Number(record.calories)) &&
-        (record.performance === "Óptimo" ||
-          record.performance === "Regular" ||
-          record.performance === "Fallido"),
+        record.performance === "Óptimo" ||
+        record.performance === "Regular" ||
+        record.performance === "Fallido",
     )
-    .map((record) => ({
-      ...record,
-      calories: Number(record.calories),
-    }));
+    .map(normalizeRecord);
 
   const restRecords = records
-    .filter(
-      (record) =>
-        Number.isFinite(Number(record.calories)) &&
-        record.performance === "Descanso",
-    )
-    .map((record) => ({
-      ...record,
-      calories: Number(record.calories),
-    }));
+    .filter((record) => record.performance === "Descanso")
+    .map(normalizeRecord);
 
   const optimalRecords = trainingRecords.filter(
     (record) => record.performance === "Óptimo",
@@ -44,28 +34,17 @@ export default function CaloriesPerformanceCard({ records }) {
     (record) => record.performance === "Fallido",
   );
 
-  const optimalAverage = getAverageCalories(optimalRecords);
-
-  const regularAverage = getAverageCalories(regularRecords);
-
-  const failedAverage = getAverageCalories(failedRecords);
-
-  const restAverage = getAverageCalories(restRecords);
-
-  const optimalRange = getCaloriesRange(optimalRecords);
-
   if (trainingRecords.length === 0 && restRecords.length === 0) {
     return (
       <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
         <div className="flex items-center gap-3">
-          <BarChart3 className="text-lime-400" size={28} />
+          <BarChart3 size={28} className="text-lime-400" />
 
           <div>
-            <h2 className="text-2xl font-bold">Calorías y rendimiento</h2>
+            <h2 className="text-2xl font-bold">Factores de rendimiento</h2>
 
             <p className="text-sm text-zinc-400">
-              Agrega registros para analizar la relación entre tu consumo y tus
-              entrenamientos.
+              Agrega registros para analizar calorías, sueño y recuperación.
             </p>
           </div>
         </div>
@@ -75,15 +54,15 @@ export default function CaloriesPerformanceCard({ records }) {
 
   return (
     <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <BarChart3 className="text-lime-400" size={28} />
+          <BarChart3 size={28} className="text-lime-400" />
 
           <div>
-            <h2 className="text-2xl font-bold">Calorías y rendimiento</h2>
+            <h2 className="text-2xl font-bold">Factores de rendimiento</h2>
 
             <p className="text-sm text-zinc-400">
-              Relación entre consumo calórico y calidad del entrenamiento
+              Compara tus entrenamientos según calorías, sueño y recuperación
             </p>
           </div>
         </div>
@@ -93,61 +72,40 @@ export default function CaloriesPerformanceCard({ records }) {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <PerformanceAverage
+      <div className="grid gap-4 lg:grid-cols-3">
+        <PerformanceGroup
           icon={<CheckCircle2 size={24} />}
-          title="Rendimiento óptimo"
-          average={optimalAverage}
-          count={optimalRecords.length}
+          title="Óptimo"
+          records={optimalRecords}
           colorClass="bg-emerald-500/15 text-emerald-400"
         />
 
-        <PerformanceAverage
+        <PerformanceGroup
           icon={<AlertCircle size={24} />}
-          title="Rendimiento regular"
-          average={regularAverage}
-          count={regularRecords.length}
+          title="Regular"
+          records={regularRecords}
           colorClass="bg-amber-500/15 text-amber-400"
         />
 
-        <PerformanceAverage
+        <PerformanceGroup
           icon={<XCircle size={24} />}
-          title="Rendimiento fallido"
-          average={failedAverage}
-          count={failedRecords.length}
+          title="Fallido"
+          records={failedRecords}
           colorClass="bg-red-500/15 text-red-400"
-        />
-
-        <PerformanceAverage
-          icon={<Moon size={24} />}
-          title="Días de descanso"
-          average={restAverage}
-          count={restRecords.length}
-          colorClass="bg-sky-500/15 text-sky-400"
-          label="descansos"
         />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
-              <Flame size={24} />
-            </div>
-
-            <div>
-              <p className="text-sm text-zinc-400">
-                Rango observado en días óptimos
-              </p>
-
-              <p className="text-2xl font-bold">{formatRange(optimalRange)}</p>
-            </div>
-          </div>
-
-          <p className="text-sm leading-relaxed text-zinc-400">
-            Este rango utiliza únicamente sesiones marcadas como rendimiento
-            óptimo.
+          <p className="mb-4 text-sm font-semibold text-zinc-300">
+            Diferencias observadas
           </p>
+
+          <PatternComparison
+            optimalRecords={optimalRecords}
+            regularRecords={regularRecords}
+            failedRecords={failedRecords}
+          />
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
@@ -158,33 +116,50 @@ export default function CaloriesPerformanceCard({ records }) {
               optimalRecords,
               regularRecords,
               failedRecords,
-              optimalAverage,
-              regularAverage,
-              failedAverage,
-              optimalRange,
-              restRecords,
-              restAverage,
             })}
           </p>
 
-          <p className="mt-3 text-xs text-zinc-500">
-            Los días de descanso se muestran por separado y no se interpretan
-            como rendimiento del gimnasio.
+          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+            Estos datos muestran asociaciones dentro de tus propios registros.
+            No significa necesariamente que una variable sea la causa directa de
+            un mejor o peor rendimiento.
           </p>
         </div>
       </div>
+
+      {restRecords.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400">
+              <Moon size={21} />
+            </div>
+
+            <div>
+              <p className="font-semibold">Días de descanso</p>
+
+              <p className="mt-1 text-sm text-zinc-400">
+                {restRecords.length}{" "}
+                {restRecords.length === 1 ? "registro" : "registros"}
+                {" · "}
+                {formatCalories(getAverage(restRecords, "calories"))}
+                {" · "}
+                {formatSleep(getAverage(restRecords, "sleepHours"))}
+                {" · "}
+                {formatRecovery(getAverage(restRecords, "recovery"))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
-function PerformanceAverage({
-  icon,
-  title,
-  average,
-  count,
-  colorClass,
-  label = "entrenamientos",
-}) {
+function PerformanceGroup({ icon, title, records, colorClass }) {
+  const calories = getAverage(records, "calories");
+  const sleep = getAverage(records, "sleepHours");
+  const recovery = getAverage(records, "recovery");
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
       <div
@@ -193,125 +168,287 @@ function PerformanceAverage({
         {icon}
       </div>
 
-      <p className="text-sm text-zinc-400">{title}</p>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-sm text-zinc-400">Rendimiento</p>
 
-      <p className="mt-1 text-2xl font-bold">
-        {average ? `${average.toLocaleString("es-MX")} kcal` : "Sin datos"}
-      </p>
+          <p className="text-2xl font-bold">{title}</p>
+        </div>
 
-      <p className="mt-2 text-xs text-zinc-500">
-        {count === 1
-          ? `1 ${label === "descansos" ? "descanso" : "entrenamiento"}`
-          : `${count} ${label}`}
-      </p>
+        <span className="text-xs text-zinc-500">
+          {records.length} {records.length === 1 ? "sesión" : "sesiones"}
+        </span>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        <MetricRow
+          icon={<Flame size={17} />}
+          label="Calorías"
+          value={formatCalories(calories)}
+          iconClass="text-orange-400"
+        />
+
+        <MetricRow
+          icon={<Moon size={17} />}
+          label="Sueño"
+          value={formatSleep(sleep)}
+          iconClass="text-indigo-400"
+        />
+
+        <MetricRow
+          icon={<HeartPulse size={17} />}
+          label="Recuperación"
+          value={formatRecovery(recovery)}
+          iconClass="text-rose-400"
+        />
+      </div>
     </div>
   );
 }
 
-function getAverageCalories(records) {
-  if (!records.length) {
-    return 0;
-  }
+function MetricRow({ icon, label, value, iconClass }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-zinc-900 px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className={iconClass}>{icon}</span>
 
-  return Math.round(
-    records.reduce((total, record) => total + record.calories, 0) /
-      records.length,
+        <span className="text-sm text-zinc-400">{label}</span>
+      </div>
+
+      <span className="font-semibold">{value}</span>
+    </div>
   );
 }
 
-function getCaloriesRange(records) {
-  if (!records.length) {
-    return null;
-  }
+function PatternComparison({ optimalRecords, regularRecords, failedRecords }) {
+  const groups = [
+    {
+      label: "Óptimo",
+      records: optimalRecords,
+    },
+    {
+      label: "Regular",
+      records: regularRecords,
+    },
+    {
+      label: "Fallido",
+      records: failedRecords,
+    },
+  ];
 
-  const calories = records.map((record) => record.calories);
+  return (
+    <div className="space-y-4">
+      <ComparisonMetric
+        label="Calorías promedio"
+        groups={groups}
+        field="calories"
+        formatter={formatCalories}
+      />
 
+      <ComparisonMetric
+        label="Sueño promedio"
+        groups={groups}
+        field="sleepHours"
+        formatter={formatSleep}
+      />
+
+      <ComparisonMetric
+        label="Recuperación promedio"
+        groups={groups}
+        field="recovery"
+        formatter={formatRecovery}
+      />
+    </div>
+  );
+}
+
+function ComparisonMetric({ label, groups, field, formatter }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs uppercase tracking-wide text-zinc-500">
+        {label}
+      </p>
+
+      <div className="grid grid-cols-3 gap-2">
+        {groups.map((group) => {
+          const average = getAverage(group.records, field);
+
+          return (
+            <div
+              key={`${field}-${group.label}`}
+              className="rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-center"
+            >
+              <p className="text-xs text-zinc-500">{group.label}</p>
+
+              <p className="mt-1 text-sm font-bold">{formatter(average)}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function normalizeRecord(record) {
   return {
-    minimum: Math.min(...calories),
-    maximum: Math.max(...calories),
+    ...record,
+
+    calories: toValidNumber(record.calories),
+
+    sleepHours: toValidNumber(record.sleepHours),
+
+    recovery: toValidNumber(record.recovery),
   };
 }
 
-function formatRange(range) {
-  if (!range) {
+function toValidNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
+function getAverage(records, field) {
+  const values = records
+    .map((record) => record[field])
+    .filter(
+      (value) =>
+        value !== null && value !== undefined && Number.isFinite(Number(value)),
+    )
+    .map(Number);
+
+  if (!values.length) {
+    return null;
+  }
+
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function formatCalories(value) {
+  if (value === null) {
     return "Sin datos";
   }
 
-  if (range.minimum === range.maximum) {
-    return `${range.minimum.toLocaleString("es-MX")} kcal`;
+  return `${Math.round(value).toLocaleString("es-MX")} kcal`;
+}
+
+function formatSleep(value) {
+  if (value === null) {
+    return "Sin datos";
   }
 
-  return `${range.minimum.toLocaleString(
-    "es-MX",
-  )}–${range.maximum.toLocaleString("es-MX")} kcal`;
+  return `${value.toFixed(1)} h`;
+}
+
+function formatRecovery(value) {
+  if (value === null) {
+    return "Sin datos";
+  }
+
+  return `${value.toFixed(1)}/10`;
 }
 
 function buildInterpretation({
   optimalRecords,
   regularRecords,
   failedRecords,
-  optimalAverage,
-  regularAverage,
-  failedAverage,
-  optimalRange,
-  restRecords,
-  restAverage,
 }) {
   if (optimalRecords.length === 0) {
-    const restText = restRecords.length
-      ? ` Tus días de descanso tienen un promedio de ${restAverage.toLocaleString(
-          "es-MX",
-        )} kcal.`
-      : "";
-
-    return `Todavía no tienes registros con rendimiento óptimo. Continúa registrando tus sesiones para detectar con qué consumo rindes mejor.${restText}`;
+    return "Todavía no hay entrenamientos óptimos suficientes para compararlos con los demás niveles de rendimiento.";
   }
 
   if (optimalRecords.length < 3) {
-    return `Tus días óptimos tienen un promedio de ${optimalAverage.toLocaleString(
-      "es-MX",
-    )} kcal, pero todavía necesitas más registros para identificar un patrón confiable.`;
+    return "Todavía tienes pocos entrenamientos óptimos registrados. Continúa acumulando datos para que las comparaciones sean más representativas.";
   }
 
-  const comparisons = [];
+  const optimalCalories = getAverage(optimalRecords, "calories");
 
-  if (regularAverage && optimalAverage > regularAverage) {
-    comparisons.push(
-      `en los días óptimos consumes ${(
-        optimalAverage - regularAverage
-      ).toLocaleString("es-MX")} kcal más que en los días regulares`,
-    );
+  const regularCalories = getAverage(regularRecords, "calories");
+
+  const failedCalories = getAverage(failedRecords, "calories");
+
+  const optimalSleep = getAverage(optimalRecords, "sleepHours");
+
+  const regularSleep = getAverage(regularRecords, "sleepHours");
+
+  const failedSleep = getAverage(failedRecords, "sleepHours");
+
+  const optimalRecovery = getAverage(optimalRecords, "recovery");
+
+  const regularRecovery = getAverage(regularRecords, "recovery");
+
+  const failedRecovery = getAverage(failedRecords, "recovery");
+
+  const patterns = [];
+
+  const otherSleepValues = [regularSleep, failedSleep].filter(
+    (value) => value !== null,
+  );
+
+  if (optimalSleep !== null && otherSleepValues.length > 0) {
+    const otherAverage =
+      otherSleepValues.reduce((total, value) => total + value, 0) /
+      otherSleepValues.length;
+
+    if (optimalSleep > otherAverage + 0.25) {
+      patterns.push(
+        `tus sesiones óptimas coinciden con más horas de sueño (${optimalSleep.toFixed(
+          1,
+        )} h de promedio)`,
+      );
+    }
   }
 
-  if (failedAverage && optimalAverage > failedAverage) {
-    comparisons.push(
-      `${(optimalAverage - failedAverage).toLocaleString(
-        "es-MX",
-      )} kcal más que en los días fallidos`,
-    );
+  const otherRecoveryValues = [regularRecovery, failedRecovery].filter(
+    (value) => value !== null,
+  );
+
+  if (optimalRecovery !== null && otherRecoveryValues.length > 0) {
+    const otherAverage =
+      otherRecoveryValues.reduce((total, value) => total + value, 0) /
+      otherRecoveryValues.length;
+
+    if (optimalRecovery > otherAverage + 0.5) {
+      patterns.push(
+        `también aparecen con una recuperación percibida mayor (${optimalRecovery.toFixed(
+          1,
+        )}/10)`,
+      );
+    }
   }
 
-  const restText = restRecords.length
-    ? ` Tus días de descanso tienen un promedio de ${restAverage.toLocaleString(
-        "es-MX",
-      )} kcal.`
-    : "";
+  const otherCalories = [regularCalories, failedCalories].filter(
+    (value) => value !== null,
+  );
 
-  if (comparisons.length > 0) {
-    return `Por ahora, ${comparisons.join(
-      " y ",
-    )}. Tus mejores sesiones aparecen dentro del rango de ${formatRange(
-      optimalRange,
-    )}.${restText}`;
+  if (optimalCalories !== null && otherCalories.length > 0) {
+    const otherAverage =
+      otherCalories.reduce((total, value) => total + value, 0) /
+      otherCalories.length;
+
+    const difference = optimalCalories - otherAverage;
+
+    if (Math.abs(difference) >= 100) {
+      patterns.push(
+        difference > 0
+          ? `el consumo calórico también es aproximadamente ${Math.round(
+              difference,
+            ).toLocaleString("es-MX")} kcal mayor`
+          : `el consumo calórico es aproximadamente ${Math.abs(
+              Math.round(difference),
+            ).toLocaleString("es-MX")} kcal menor`,
+      );
+    }
   }
 
-  if (regularRecords.length === 0 && failedRecords.length === 0) {
-    return `Todos tus entrenamientos registrados son óptimos, con un promedio de ${optimalAverage.toLocaleString(
-      "es-MX",
-    )} kcal. Necesitas sesiones con otros resultados para compararlas.${restText}`;
+  if (!patterns.length) {
+    return "Por ahora no aparece una diferencia clara entre calorías, sueño o recuperación según el nivel de rendimiento. Conforme registres más días podrán aparecer patrones individuales.";
   }
 
-  return `Tus entrenamientos óptimos tienen un promedio de ${optimalAverage.toLocaleString(
-    "es-MX",
-  )} kcal. Por ahora no aparece una diferencia clara frente a los demás niveles de rendimiento.${restText}`;
+  return `En tus registros actuales, ${patterns.join(
+    " y ",
+  )}. Esto describe un patrón observado y no demuestra por sí solo una relación causal.`;
 }

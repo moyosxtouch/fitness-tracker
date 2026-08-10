@@ -97,7 +97,7 @@ export default function WeeklyComparisonCard({ records }) {
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <ComparisonCard
           icon={<Flame size={23} />}
           title="Promedio de calorías"
@@ -133,25 +133,6 @@ export default function WeeklyComparisonCard({ records }) {
           differenceSuffix="kg"
           iconClass="bg-sky-500/15 text-sky-400"
           inverseColors
-        />
-
-        <ComparisonCard
-          icon={<Scale size={23} />}
-          title="Peso promedio"
-          currentValue={
-            currentWeightAverage
-              ? `${currentWeightAverage.toFixed(2)} kg`
-              : "Sin datos"
-          }
-          previousValue={
-            previousWeightAverage
-              ? `${previousWeightAverage.toFixed(2)} kg`
-              : "Sin datos"
-          }
-          difference={weightDifference}
-          differenceSuffix="kg"
-          iconClass="bg-sky-500/15 text-sky-400"
-          neutralDifference
         />
       </div>
 
