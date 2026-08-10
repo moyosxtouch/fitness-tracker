@@ -133,9 +133,17 @@ function App() {
 
     setEditingRecord(null);
   }
-  function loadTestData() {
+  function loadTestData(trend) {
+    const labels = {
+      descending: "descendente",
+      maintenance: "de mantenimiento",
+      ascending: "ascendente",
+    };
+
+    const label = labels[trend] ?? "de prueba";
+
     const confirmed = window.confirm(
-      "Esto reemplazará tus registros actuales por 365 registros de prueba. ¿Continuar?",
+      `Esto reemplazará tus registros actuales por 365 registros con tendencia ${label}. ¿Continuar?`,
     );
 
     if (!confirmed) {
@@ -143,8 +151,7 @@ function App() {
     }
 
     const testRecords = generateTestData(365, {
-      startWeight: 94,
-      endWeight: 69.5,
+      trend,
     });
 
     setRecords(testRecords);
@@ -152,7 +159,7 @@ function App() {
 
     showToast({
       title: "Datos de prueba generados",
-      message: "Se crearon 365 registros para probar la aplicación.",
+      message: `Se crearon 365 registros con tendencia ${label}.`,
       type: "info",
     });
   }

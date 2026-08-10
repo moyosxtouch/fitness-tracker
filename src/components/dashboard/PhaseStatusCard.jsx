@@ -68,7 +68,7 @@ export default function PhaseStatusCard({ records, settings }) {
 
         <MetricCard
           icon={<Scale size={23} />}
-          title="Promedio actual"
+          title="Peso promedio reciente"
           value={
             trend.latestAverage !== null
               ? `${trend.latestAverage.toFixed(2)} kg`
@@ -84,13 +84,13 @@ export default function PhaseStatusCard({ records, settings }) {
 
         <MetricCard
           icon={<Flame size={23} />}
-          title="Promedio calórico"
+          title="Promedio calórico reciente"
           value={
             averageCalories
               ? `${averageCalories.toLocaleString("es-MX")} kcal`
               : "Sin datos"
           }
-          description={`Meta configurada: ${Number(
+          description={`Últimos ${calorieRecords.length} registros · Meta: ${Number(
             settings.goalCalories,
           ).toLocaleString("es-MX")} kcal`}
           iconClass="bg-orange-500/15 text-orange-400"

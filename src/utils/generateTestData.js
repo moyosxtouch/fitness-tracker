@@ -16,10 +16,37 @@ const NOTES = [
   "Algo de cansancio",
 ];
 
+const TREND_CONFIG = {
+  descending: {
+    startWeight: 78,
+    endWeight: 69.5,
+    baseCalories: 1850,
+    calorieDrift: -100,
+  },
+
+  maintenance: {
+    startWeight: 70,
+    endWeight: 70,
+    baseCalories: 2050,
+    calorieDrift: 0,
+  },
+
+  ascending: {
+    startWeight: 68,
+    endWeight: 74,
+    baseCalories: 2300,
+    calorieDrift: 100,
+  },
+};
+
 export function generateTestData(days = 365, options = {}) {
-  const { startWeight = 94, endWeight = 69.5, endDate = new Date() } = options;
+  const { trend = "descending", endDate = new Date() } = options;
+
+  const config = TREND_CONFIG[trend] ?? TREND_CONFIG.descending;
 
   const records = [];
+
+  let temporaryWeightBoost = 0;
 
   for (let index = 0; index < days; index++) {
     const daysFromEnd = days - 1 - index;
@@ -30,30 +57,70 @@ export function generateTestData(days = 365, options = {}) {
 
     const progress = days === 1 ? 1 : index / (days - 1);
 
-    const expectedWeight = startWeight + (endWeight - startWeight) * progress;
+    const expectedWeight =
+      config.startWeight + (config.endWeight - config.startWeight) * progress;
 
-    // Simula fluctuaciones normales del peso.
-    const weightNoise = randomBetween(-0.45, 0.45);
+    /*
+     * Fluctuación diaria normal.
+     */
+    const dailyNoise = randomBetween(-0.28, 0.28);
 
-    const weight = Number((expectedWeight + weightNoise).toFixed(1));
+    /*
+     * Algunos días simulamos una comida alta
+     * en carbohidratos/sodio.
+     *
+     * El efecto puede mantenerse 1–2 días.
+     */
+    if (Math.random() < 0.07) {
+      temporaryWeightBoost = randomBetween(0.3, 0.55);
+    } else {
+      temporaryWeightBoost *= randomBetween(0.25, 0.55);
+
+      if (temporaryWeightBoost < 0.05) {
+        temporaryWeightBoost = 0;
+      }
+    }
+
+    const weight = Number(
+      (expectedWeight + dailyNoise + temporaryWeightBoost).toFixed(1),
+    );
 
     const isRestDay = date.getDay() === 0 || Math.random() < 0.08;
+
+    const recoveryData = generateRecoveryData({
+      isRestDay,
+    });
 
     const calories = generateCalories({
       progress,
       isRestDay,
+      trend,
+      config,
     });
 
     const performance = isRestDay
       ? "Descanso"
-      : generatePerformance(calories, progress);
+      : generatePerformance({
+          calories,
+          sleepHours: recoveryData.sleepHours,
+          recovery: recoveryData.recovery,
+        });
 
     records.push({
       id: crypto.randomUUID(),
+
       date: formatDateKey(date),
+
       calories,
+
       weight,
+
       performance,
+
+      sleepHours: recoveryData.sleepHours,
+
+      recovery: recoveryData.recovery,
+
       notes: generateNote(performance),
     });
   }
@@ -61,57 +128,113 @@ export function generateTestData(days = 365, options = {}) {
   return records.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function generateCalories({ progress, isRestDay }) {
-  /*
-   * Al principio simulamos un consumo algo mayor.
-   * Conforme pasa el tiempo el promedio baja.
-   */
-  const baseCalories = 2100 - progress * 350;
+function generateCalories({ progress, isRestDay, config }) {
+  const baseCalories = config.baseCalories + config.calorieDrift * progress;
 
   let calories = baseCalories + randomBetween(-180, 180);
 
   if (isRestDay) {
-    calories -= randomBetween(50, 150);
+    calories -= randomBetween(50, 130);
   }
 
-  // Algunos días de refeed.
-  if (!isRestDay && Math.random() < 0.12) {
-    calories += randomBetween(250, 450);
+  /*
+   * Refeed / comida alta
+   * aproximadamente 1 de cada 10 días.
+   */
+  if (!isRestDay && Math.random() < 0.1) {
+    calories += randomBetween(250, 500);
   }
 
-  return Math.round(Math.max(1450, Math.min(2400, calories)));
+  return Math.round(Math.max(1400, Math.min(2800, calories)));
 }
 
-function generatePerformance(calories, progress) {
+function generateRecoveryData({ isRestDay }) {
   /*
-   * Simulamos que un consumo demasiado bajo
-   * aumenta ligeramente la posibilidad de
-   * rendimiento regular/fallido.
+   * Sueño no perfectamente distribuido.
    */
+  let sleepHours = randomBetween(5.5, 8.5);
 
-  const random = Math.random();
-
-  if (calories < 1600) {
-    if (random < 0.5) {
-      return "Óptimo";
-    }
-
-    if (random < 0.85) {
-      return "Regular";
-    }
-
-    return "Fallido";
+  /*
+   * Algunos días particularmente buenos.
+   */
+  if (Math.random() < 0.18) {
+    sleepHours += randomBetween(0.3, 0.8);
   }
 
-  // Conforme progresa el año,
-  // simulamos cierta adaptación.
-  const optimalProbability = 0.68 + progress * 0.12;
+  /*
+   * Algunos días de poco sueño.
+   */
+  if (Math.random() < 0.15) {
+    sleepHours -= randomBetween(0.8, 1.5);
+  }
 
-  if (random < optimalProbability) {
+  sleepHours = Math.max(4, Math.min(9.5, sleepHours));
+
+  sleepHours = Math.round(sleepHours * 2) / 2;
+
+  /*
+   * Recuperación parcialmente relacionada
+   * con el sueño, pero no determinada
+   * completamente por él.
+   */
+  let recovery = 4 + (sleepHours - 5) * 1.15 + randomBetween(-1.5, 1.5);
+
+  if (isRestDay) {
+    recovery += randomBetween(0.2, 1);
+  }
+
+  recovery = Math.round(Math.max(1, Math.min(10, recovery)));
+
+  return {
+    sleepHours,
+    recovery,
+  };
+}
+
+function generatePerformance({ calories, sleepHours, recovery }) {
+  let score = 0;
+
+  /*
+   * Sueño.
+   */
+  if (sleepHours >= 7.5) {
+    score += 2;
+  } else if (sleepHours >= 6.5) {
+    score += 1;
+  } else if (sleepHours < 5.5) {
+    score -= 2;
+  }
+
+  /*
+   * Recuperación percibida.
+   */
+  if (recovery >= 8) {
+    score += 3;
+  } else if (recovery >= 6) {
+    score += 1;
+  } else if (recovery <= 4) {
+    score -= 3;
+  }
+
+  /*
+   * Calorías bajas pueden influir,
+   * pero no son el factor dominante.
+   */
+  if (calories < 1550) {
+    score -= 1;
+  }
+
+  /*
+   * Ruido para que la relación
+   * no sea perfecta.
+   */
+  score += randomBetween(-1.5, 1.5);
+
+  if (score >= 2) {
     return "Óptimo";
   }
 
-  if (random < 0.95) {
+  if (score >= -1.5) {
     return "Regular";
   }
 
@@ -120,25 +243,21 @@ function generatePerformance(calories, progress) {
 
 function generateNote(performance) {
   if (performance === "Descanso") {
-    const restNotes = [
+    return randomItem([
       "Día de descanso",
       "Recuperación",
       "Caminata ligera",
       "Descanso completo",
-    ];
-
-    return randomItem(restNotes);
+    ]);
   }
 
   if (performance === "Fallido") {
-    const failedNotes = [
+    return randomItem([
       "Poco sueño",
       "Fatiga acumulada",
       "Entrenamiento incompleto",
       "Bajo nivel de energía",
-    ];
-
-    return randomItem(failedNotes);
+    ]);
   }
 
   return randomItem(NOTES);

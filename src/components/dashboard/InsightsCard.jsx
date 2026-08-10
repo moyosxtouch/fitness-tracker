@@ -108,7 +108,7 @@ export default function InsightsCard({ records }) {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Insight
           icon={<Flame size={24} />}
-          title="Promedio calórico"
+          title="Promedio calórico general"
           value={`${averageCalories.toLocaleString("es-MX")} kcal`}
           description={`Promedio de ${calorieRecords.length} registros`}
           iconClass="bg-orange-500/15 text-orange-400"
@@ -276,15 +276,7 @@ function getTotalWeightColor(difference) {
 }
 
 function getTotalWeightMessage(difference) {
-  if (difference < 0) {
-    return "Desde tu primer registro";
-  }
-
-  if (difference > 0) {
-    return "Desde tu primer registro";
-  }
-
-  return "Sin cambio acumulado";
+  return difference === 0 ? "Sin cambio acumulado" : "Desde tu primer registro";
 }
 
 function buildSummary({

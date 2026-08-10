@@ -4,15 +4,17 @@ import autoTable from "jspdf-autotable";
 import { exportPhotoBackup, importPhotoBackup } from "../../utils/photoBackup";
 import { exportFullBackup } from "../../utils/fullBackup";
 import {
+  ArrowDown,
+  ArrowUp,
   DatabaseBackup,
   Download,
   FileSpreadsheet,
   FileText,
   ImageDown,
   ImageUp,
+  Minus,
   Trash2,
   Upload,
-  TestTube2,
 } from "lucide-react";
 
 export default function DataManagementCard({
@@ -525,11 +527,27 @@ export default function DataManagementCard({
           className="bg-lime-400 text-black hover:bg-lime-300"
         />
         <ActionButton
-          onClick={onGenerateTestData}
-          icon={<TestTube2 size={19} />}
-          title="Generar datos de prueba"
-          description="Crea 365 días simulados para probar gráficas y estadísticas."
+          onClick={() => onGenerateTestData("descending")}
+          icon={<ArrowDown size={19} />}
+          title="Prueba: descenso"
+          description="Genera 365 días con una tendencia descendente y fluctuaciones reales."
+          className="border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+        />
+
+        <ActionButton
+          onClick={() => onGenerateTestData("maintenance")}
+          icon={<Minus size={19} />}
+          title="Prueba: mantenimiento"
+          description="Genera 365 días con peso estable y fluctuaciones normales."
           className="border border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
+        />
+
+        <ActionButton
+          onClick={() => onGenerateTestData("ascending")}
+          icon={<ArrowUp size={19} />}
+          title="Prueba: ascenso"
+          description="Genera 365 días con una tendencia ascendente y fluctuaciones reales."
+          className="border border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20"
         />
       </div>
 

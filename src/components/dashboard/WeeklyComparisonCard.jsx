@@ -38,6 +38,8 @@ export default function WeeklyComparisonCard({ records }) {
 
   const currentWeek = getRecordsForDates(validRecords, currentWeekDates);
 
+  const currentWeekIsIncomplete = currentWeek.length < 3;
+
   const previousWeek = getRecordsForDates(validRecords, previousWeekDates);
 
   const currentCaloriesAverage = getCaloriesAverage(currentWeek);
@@ -96,6 +98,15 @@ export default function WeeklyComparisonCard({ records }) {
           {formatWeekRange(currentWeekDates)}
         </span>
       </div>
+      {currentWeekIsIncomplete && (
+        <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="font-semibold text-amber-300">Semana en progreso</p>
+
+          <p className="mt-1 text-sm text-amber-200/70">
+            Aún no hay suficientes datos para una comparación fiable.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <ComparisonCard
@@ -316,54 +327,12 @@ function buildWeeklySummary({
   previousTrainingCount,
   currentRestDays,
 }) {
+  if (currentWeek.length < 3) {
+    return "Los valores mostrados son preliminares y pueden cambiar conforme agregues más días.";
+  }
   if (currentWeek.length === 0 || previousWeek.length === 0) {
     return "Necesitas registros en dos semanas distintas para generar una comparación completa.";
   }
-
-  const caloriesText =
-    calorieDifference > 0
-      ? `Esta semana consumes en promedio ${Math.abs(
-          calorieDifference,
-        )} kcal más al día.`
-      : calorieDifference < 0
-        ? `Esta semana consumes en promedio ${Math.abs(
-            calorieDifference,
-          )} kcal menos al día.`
-        : "Tu promedio calórico se mantiene igual.";
-
-  const weightText =
-    weightDifference < 0
-      ? `El promedio semanal fue ${Math.abs(weightDifference).toFixed(
-          2,
-        )} kg menor que la semana anterior.`
-      : weightDifference > 0
-        ? `El promedio semanal fue ${weightDifference.toFixed(
-            2,
-          )} kg mayor que la semana anterior.`
-        : "El promedio semanal fue igual al de la semana anterior.";
-
-  let performanceText;
-
-  if (currentTrainingCount === 0 || previousTrainingCount === 0) {
-    performanceText =
-      "No hay suficientes entrenamientos en ambas semanas para comparar el rendimiento.";
-  } else if (performanceDifference > 0) {
-    performanceText = "Además, mejoró tu porcentaje de entrenamientos óptimos.";
-  } else if (performanceDifference < 0) {
-    performanceText =
-      "Sin embargo, bajó tu porcentaje de entrenamientos óptimos.";
-  } else {
-    performanceText = "Tu rendimiento se mantiene similar.";
-  }
-
-  const restText =
-    currentRestDays > 0
-      ? `Esta semana registraste ${currentRestDays} ${
-          currentRestDays === 1 ? "día de descanso" : "días de descanso"
-        }.`
-      : "";
-
-  return `${caloriesText} ${weightText} ${performanceText} ${restText}`.trim();
 }
 
 function getWeekDates(referenceDate) {
