@@ -1,9 +1,9 @@
 import { Flame, Scale, Dumbbell, Target, CalendarDays } from "lucide-react";
 
 export default function TodaySummary({ records, settings, onOpenSettings }) {
-  const sortedRecords = [...records].sort((a, b) =>
-    b.date.localeCompare(a.date),
-  );
+  const sortedRecords = [...records]
+    .filter((record) => record.date)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const latestRecord = sortedRecords[0];
 
@@ -36,12 +36,30 @@ export default function TodaySummary({ records, settings, onOpenSettings }) {
     );
   }
 
-  const calories = Number(latestRecord.calories);
-  const weight = Number(latestRecord.weight);
+  const calories =
+    latestRecord.calories !== null &&
+    latestRecord.calories !== undefined &&
+    latestRecord.calories !== "" &&
+    Number.isFinite(Number(latestRecord.calories))
+      ? Number(latestRecord.calories)
+      : null;
 
-  const remainingCalories = settings.goalCalories - calories;
+  const weight =
+    latestRecord.weight !== null &&
+    latestRecord.weight !== undefined &&
+    latestRecord.weight !== "" &&
+    Number.isFinite(Number(latestRecord.weight)) &&
+    Number(latestRecord.weight) > 0
+      ? Number(latestRecord.weight)
+      : null;
 
-  const weightDifference = Number((weight - settings.goalWeight).toFixed(1));
+  const remainingCalories =
+    calories !== null ? Number(settings.goalCalories) - calories : null;
+
+  const weightDifference =
+    weight !== null
+      ? Number((weight - Number(settings.goalWeight)).toFixed(1))
+      : null;
 
   return (
     <section className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 md:p-8 shadow-lg">
@@ -72,25 +90,34 @@ export default function TodaySummary({ records, settings, onOpenSettings }) {
         <SummaryCard
           icon={<Flame size={28} />}
           title="Calorías"
-          value={`${calories.toLocaleString("es-MX")} kcal`}
-          description={getCaloriesDescription(remainingCalories)}
-          color="bg-orange-500"
+          value={
+            calories !== null
+              ? `${calories.toLocaleString("es-MX")} kcal`
+              : "Sin datos"
+          }
+          description={
+            calories !== null
+              ? getCaloriesDescription(remainingCalories)
+              : "Sin calorías registradas"
+          }
         />
 
         <SummaryCard
           icon={<Scale size={28} />}
           title="Peso actual"
-          value={`${weight.toFixed(1)} kg`}
-          description={getWeightDescription(weightDifference)}
-          color="bg-sky-500"
+          value={weight !== null ? `${weight.toFixed(1)} kg` : "Sin datos"}
+          description={
+            weight !== null
+              ? getWeightDescription(weightDifference)
+              : "Sin peso registrado"
+          }
         />
 
         <SummaryCard
           icon={<Dumbbell size={28} />}
           title="Rendimiento"
-          value={latestRecord.performance}
-          description={latestRecord.notes || "Sin notas"}
-          color={getPerformanceColor(latestRecord.performance)}
+          value={latestRecord.performance || "Sin datos"}
+          description={latestRecord.notes?.trim() || "Sin notas"}
         />
 
         <SummaryCard

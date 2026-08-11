@@ -8,12 +8,21 @@ import {
   getProgressPhotos,
   saveProgressPhoto,
 } from "../../utils/photoStorage";
+import {
+  getMeasurements,
+  saveMeasurement,
+} from "../../utils/measurementStorage";
 
 export default function ProgressPhotosCard({ records, onShowToast }) {
   const [progressPhotos, setProgressPhotos] = useState([]);
 
   const [form, setForm] = useState({
     date: getLocalDate(),
+    waist: "",
+    chest: "",
+    arm: "",
+    thigh: "",
+    hips: "",
     weight: "",
     front: null,
     side: null,
@@ -208,6 +217,20 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       };
 
       await saveProgressPhoto(progress);
+      const hasMeasurements =
+        form.waist || form.chest || form.arm || form.thigh || form.hips;
+
+      if (hasMeasurements) {
+        saveMeasurement({
+          date: form.date,
+          weight: Number.isFinite(weight) ? weight : null,
+          waist: parseOptionalNumber(form.waist),
+          chest: parseOptionalNumber(form.chest),
+          arm: parseOptionalNumber(form.arm),
+          thigh: parseOptionalNumber(form.thigh),
+          hips: parseOptionalNumber(form.hips),
+        });
+      }
 
       setProgressPhotos((previousPhotos) =>
         [progress, ...previousPhotos].sort((a, b) =>
@@ -218,6 +241,11 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       setForm({
         date: getLocalDate(),
         weight: "",
+        waist: "",
+        chest: "",
+        arm: "",
+        thigh: "",
+        hips: "",
         front: null,
         side: null,
         back: null,
@@ -322,6 +350,53 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             />
           </label>
         </div>
+        <div className="mb-5">
+          <div className="mb-3">
+            <p className="font-semibold">Medidas corporales</p>
+
+            <p className="mt-1 text-xs text-zinc-500">
+              Opcional · usa centímetros y procura medir siempre en condiciones
+              similares.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <MeasurementField
+              label="Cintura"
+              name="waist"
+              value={form.waist}
+              onChange={handleChange}
+            />
+
+            <MeasurementField
+              label="Pecho"
+              name="chest"
+              value={form.chest}
+              onChange={handleChange}
+            />
+
+            <MeasurementField
+              label="Brazo"
+              name="arm"
+              value={form.arm}
+              onChange={handleChange}
+            />
+
+            <MeasurementField
+              label="Muslo"
+              name="thigh"
+              value={form.thigh}
+              onChange={handleChange}
+            />
+
+            <MeasurementField
+              label="Cadera"
+              name="hips"
+              value={form.hips}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           <PhotoInput
@@ -348,7 +423,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 p-3 font-bold text-black transition hover:bg-lime-300"
         >
           <ImagePlus size={19} />
-          Guardar fotografías
+          Guardar sesión de progreso
         </button>
         <button
           type="button"
@@ -749,6 +824,39 @@ function findWeightForDate(records, date) {
   const weight = Number(record.weight);
 
   return Number.isFinite(weight) ? weight : null;
+}
+function MeasurementField({ label, name, value, onChange }) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm text-zinc-400">{label}</span>
+
+      <div className="relative">
+        <input
+          type="number"
+          step="0.1"
+          min="1"
+          name={name}
+          placeholder="Ej. 80"
+          value={value}
+          onChange={onChange}
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 p-3 pr-10 outline-none focus:border-lime-400"
+        />
+
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
+          cm
+        </span>
+      </div>
+    </label>
+  );
+}
+function parseOptionalNumber(value) {
+  if (value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) && number > 0 ? number : null;
 }
 
 function getLocalDate() {

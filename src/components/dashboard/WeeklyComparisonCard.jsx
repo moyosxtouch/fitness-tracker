@@ -143,7 +143,7 @@ export default function WeeklyComparisonCard({ records }) {
           difference={weightDifference}
           differenceSuffix="kg"
           iconClass="bg-sky-500/15 text-sky-400"
-          inverseColors
+          neutralDifference
         />
       </div>
 
@@ -170,7 +170,7 @@ export default function WeeklyComparisonCard({ records }) {
             previousWeek,
             calorieDifference,
             weightDifference,
-            performanceDifference,
+
             currentTrainingCount,
             previousTrainingCount,
             currentRestDays,
@@ -322,7 +322,7 @@ function buildWeeklySummary({
   previousWeek,
   calorieDifference,
   weightDifference,
-  performanceDifference,
+
   currentTrainingCount,
   previousTrainingCount,
   currentRestDays,
@@ -330,9 +330,48 @@ function buildWeeklySummary({
   if (currentWeek.length < 3) {
     return "Los valores mostrados son preliminares y pueden cambiar conforme agregues más días.";
   }
+
   if (currentWeek.length === 0 || previousWeek.length === 0) {
     return "Necesitas registros en dos semanas distintas para generar una comparación completa.";
   }
+
+  const caloriesText =
+    calorieDifference > 0
+      ? `Esta semana consumes en promedio ${Math.abs(
+          calorieDifference,
+        ).toLocaleString("es-MX")} kcal más al día.`
+      : calorieDifference < 0
+        ? `Esta semana consumes en promedio ${Math.abs(
+            calorieDifference,
+          ).toLocaleString("es-MX")} kcal menos al día.`
+        : "Tu promedio calórico es igual al de la semana anterior.";
+
+  const weightText =
+    weightDifference > 0
+      ? `El peso promedio semanal fue ${Math.abs(weightDifference).toFixed(
+          2,
+        )} kg mayor que la semana anterior.`
+      : weightDifference < 0
+        ? `El peso promedio semanal fue ${Math.abs(weightDifference).toFixed(
+            2,
+          )} kg menor que la semana anterior.`
+        : "El peso promedio semanal fue igual al de la semana anterior.";
+
+  const trainingText =
+    currentTrainingCount !== previousTrainingCount
+      ? `Registraste ${currentTrainingCount} ${
+          currentTrainingCount === 1 ? "entrenamiento" : "entrenamientos"
+        } frente a ${previousTrainingCount} la semana anterior.`
+      : "";
+
+  const restText =
+    currentRestDays > 0
+      ? `Esta semana registraste ${currentRestDays} ${
+          currentRestDays === 1 ? "día de descanso" : "días de descanso"
+        }.`
+      : "";
+
+  return `${caloriesText} ${weightText} ${trainingText} ${restText}`.trim();
 }
 
 function getWeekDates(referenceDate) {

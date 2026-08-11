@@ -8,13 +8,14 @@ import {
 } from "lucide-react";
 
 export default function PerformanceCard({ records }) {
-  const validRecords = records
-    .filter((record) => record.performance)
-    .sort((a, b) => b.date.localeCompare(a.date));
+  const validPerformances = ["Óptimo", "Regular", "Fallido", "Descanso"];
 
-  const referenceDate = validRecords.length
-    ? parseLocalDate(validRecords[0].date)
-    : new Date();
+  const validRecords = records
+    .filter(
+      (record) => record.date && validPerformances.includes(record.performance),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const referenceDate = new Date();
 
   const weekDates = getWeekDates(referenceDate);
 
@@ -61,6 +62,8 @@ export default function PerformanceCard({ records }) {
 
   const completedSessions =
     weeklyCounts.optimal + weeklyCounts.regular + weeklyCounts.failed;
+
+  const performanceIsPreliminary = completedSessions < 3;
 
   const optimalPercentage = completedSessions
     ? Math.round((weeklyCounts.optimal / completedSessions) * 100)
@@ -147,6 +150,7 @@ export default function PerformanceCard({ records }) {
             completedSessions,
             optimalPercentage,
             restDays: weeklyCounts.rest,
+            performanceIsPreliminary,
           })}
         </p>
       </div>
@@ -259,6 +263,7 @@ function getPerformanceMessage({
   completedSessions,
   optimalPercentage,
   restDays,
+  performanceIsPreliminary,
 }) {
   if (completedSessions === 0) {
     if (restDays > 0) {
@@ -266,6 +271,9 @@ function getPerformanceMessage({
     }
 
     return "Todavía no tienes entrenamientos registrados esta semana.";
+  }
+  if (performanceIsPreliminary) {
+    return "Semana en progreso. El porcentaje es preliminar y puede cambiar conforme registres más entrenamientos.";
   }
 
   if (optimalPercentage >= 80) {
@@ -294,10 +302,6 @@ function getWeekDates(referenceDate) {
 
     return date;
   });
-}
-
-function parseLocalDate(date) {
-  return new Date(`${date}T00:00:00`);
 }
 
 function formatDateKey(date) {

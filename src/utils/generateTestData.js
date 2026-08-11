@@ -37,6 +37,12 @@ const TREND_CONFIG = {
     baseCalories: 2300,
     calorieDrift: 100,
   },
+  unclear: {
+    startWeight: 70,
+    endWeight: 69.6,
+    baseCalories: 2050,
+    calorieDrift: 0,
+  },
 };
 
 export function generateTestData(days = 365, options = {}) {
@@ -63,7 +69,10 @@ export function generateTestData(days = 365, options = {}) {
     /*
      * Fluctuación diaria normal.
      */
-    const dailyNoise = randomBetween(-0.28, 0.28);
+    const dailyNoise =
+      trend === "unclear"
+        ? randomBetween(-0.55, 0.55)
+        : randomBetween(-0.28, 0.28);
 
     /*
      * Algunos días simulamos una comida alta
@@ -71,8 +80,10 @@ export function generateTestData(days = 365, options = {}) {
      *
      * El efecto puede mantenerse 1–2 días.
      */
-    if (Math.random() < 0.07) {
-      temporaryWeightBoost = randomBetween(0.3, 0.55);
+    const boostProbability = trend === "unclear" ? 0.14 : 0.07;
+
+    if (Math.random() < boostProbability) {
+      temporaryWeightBoost = randomBetween(0.3, 0.6);
     } else {
       temporaryWeightBoost *= randomBetween(0.25, 0.55);
 

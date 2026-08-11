@@ -6,6 +6,7 @@ import { exportFullBackup } from "../../utils/fullBackup";
 import {
   ArrowDown,
   ArrowUp,
+  CircleHelp,
   DatabaseBackup,
   Download,
   FileSpreadsheet,
@@ -472,7 +473,6 @@ export default function DataManagementCard({
           description="Descarga tus registros en formato CSV."
           className="bg-lime-400 text-black hover:bg-lime-300"
         />
-
         <ActionButton
           onClick={exportPdf}
           icon={<FileText size={19} />}
@@ -480,7 +480,6 @@ export default function DataManagementCard({
           description="Descarga un reporte completo de tu progreso."
           className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
         />
-
         <ActionButton
           onClick={exportBackup}
           icon={<Download size={19} />}
@@ -495,7 +494,6 @@ export default function DataManagementCard({
           description="Descarga todas tus fotografías en un ZIP."
           className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
         />
-
         <ActionButton
           onClick={() => photoBackupInputRef.current?.click()}
           icon={<ImageUp size={19} />}
@@ -503,7 +501,6 @@ export default function DataManagementCard({
           description="Restaura un respaldo ZIP de fotografías."
           className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
         />
-
         <ActionButton
           onClick={() => fileInputRef.current?.click()}
           icon={<Upload size={19} />}
@@ -511,7 +508,6 @@ export default function DataManagementCard({
           description="Restaura un archivo JSON exportado."
           className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
         />
-
         <ActionButton
           onClick={deleteAllData}
           icon={<Trash2 size={19} />}
@@ -533,7 +529,6 @@ export default function DataManagementCard({
           description="Genera 365 días con una tendencia descendente y fluctuaciones reales."
           className="border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
         />
-
         <ActionButton
           onClick={() => onGenerateTestData("maintenance")}
           icon={<Minus size={19} />}
@@ -541,7 +536,6 @@ export default function DataManagementCard({
           description="Genera 365 días con peso estable y fluctuaciones normales."
           className="border border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
         />
-
         <ActionButton
           onClick={() => onGenerateTestData("ascending")}
           icon={<ArrowUp size={19} />}

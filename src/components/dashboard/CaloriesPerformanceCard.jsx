@@ -326,6 +326,11 @@ function getAverage(records, field) {
 
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
+function getCombinedAverage(recordGroups, field) {
+  const records = recordGroups.flat();
+
+  return getAverage(records, field);
+}
 
 function formatCalories(value) {
   if (value === null) {
@@ -363,73 +368,61 @@ function buildInterpretation({
   if (optimalRecords.length < 3) {
     return "Todavía tienes pocos entrenamientos óptimos registrados. Continúa acumulando datos para que las comparaciones sean más representativas.";
   }
+  const otherRecords = [...regularRecords, ...failedRecords];
+
+  if (otherRecords.length < 3) {
+    return "Todavía necesitas más entrenamientos regulares o fallidos para comparar tu rendimiento de forma representativa.";
+  }
 
   const optimalCalories = getAverage(optimalRecords, "calories");
 
-  const regularCalories = getAverage(regularRecords, "calories");
-
-  const failedCalories = getAverage(failedRecords, "calories");
-
   const optimalSleep = getAverage(optimalRecords, "sleepHours");
-
-  const regularSleep = getAverage(regularRecords, "sleepHours");
-
-  const failedSleep = getAverage(failedRecords, "sleepHours");
 
   const optimalRecovery = getAverage(optimalRecords, "recovery");
 
-  const regularRecovery = getAverage(regularRecords, "recovery");
-
-  const failedRecovery = getAverage(failedRecords, "recovery");
-
   const patterns = [];
 
-  const otherSleepValues = [regularSleep, failedSleep].filter(
-    (value) => value !== null,
+  const otherSleepAverage = getCombinedAverage(
+    [regularRecords, failedRecords],
+    "sleepHours",
   );
 
-  if (optimalSleep !== null && otherSleepValues.length > 0) {
-    const otherAverage =
-      otherSleepValues.reduce((total, value) => total + value, 0) /
-      otherSleepValues.length;
-
-    if (optimalSleep > otherAverage + 0.25) {
-      patterns.push(
-        `tus sesiones óptimas coinciden con más horas de sueño (${optimalSleep.toFixed(
-          1,
-        )} h de promedio)`,
-      );
-    }
+  if (
+    optimalSleep !== null &&
+    otherSleepAverage !== null &&
+    optimalSleep > otherSleepAverage + 0.25
+  ) {
+    patterns.push(
+      `tus sesiones óptimas coinciden con más horas de sueño (${optimalSleep.toFixed(
+        1,
+      )} h de promedio)`,
+    );
   }
 
-  const otherRecoveryValues = [regularRecovery, failedRecovery].filter(
-    (value) => value !== null,
+  const otherRecoveryAverage = getCombinedAverage(
+    [regularRecords, failedRecords],
+    "recovery",
   );
 
-  if (optimalRecovery !== null && otherRecoveryValues.length > 0) {
-    const otherAverage =
-      otherRecoveryValues.reduce((total, value) => total + value, 0) /
-      otherRecoveryValues.length;
-
-    if (optimalRecovery > otherAverage + 0.5) {
-      patterns.push(
-        `también aparecen con una recuperación percibida mayor (${optimalRecovery.toFixed(
-          1,
-        )}/10)`,
-      );
-    }
+  if (
+    optimalRecovery !== null &&
+    otherRecoveryAverage !== null &&
+    optimalRecovery > otherRecoveryAverage + 0.5
+  ) {
+    patterns.push(
+      `también aparecen con una recuperación percibida mayor (${optimalRecovery.toFixed(
+        1,
+      )}/10)`,
+    );
   }
 
-  const otherCalories = [regularCalories, failedCalories].filter(
-    (value) => value !== null,
+  const otherCaloriesAverage = getCombinedAverage(
+    [regularRecords, failedRecords],
+    "calories",
   );
 
-  if (optimalCalories !== null && otherCalories.length > 0) {
-    const otherAverage =
-      otherCalories.reduce((total, value) => total + value, 0) /
-      otherCalories.length;
-
-    const difference = optimalCalories - otherAverage;
+  if (optimalCalories !== null && otherCaloriesAverage !== null) {
+    const difference = optimalCalories - otherCaloriesAverage;
 
     if (Math.abs(difference) >= 100) {
       patterns.push(

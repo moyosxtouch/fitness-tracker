@@ -42,29 +42,25 @@ export function getWeightTrend(records) {
       ? Number(((regression.slope / latestAverage) * 100).toFixed(2))
       : 0;
 
+  const STABLE_PERCENT_THRESHOLD = 0.15;
+  const STABLE_VARIABILITY_THRESHOLD = 0.18;
+
   let status;
   let label;
 
-  /*
-   * Si todo el intervalo estimado está debajo de 0,
-   * existe una tendencia descendente clara.
-   */
-  if (regression.confidenceHigh < 0) {
+  if (
+    Math.abs(weeklyChangePercent) <= STABLE_PERCENT_THRESHOLD &&
+    regression.residualStdDev <= STABLE_VARIABILITY_THRESHOLD
+  ) {
+    status = "stable";
+    label = "Estable";
+  } else if (regression.confidenceHigh < 0) {
     status = "down";
     label = "Descendente";
   } else if (regression.confidenceLow > 0) {
-    /*
-     * Si todo está arriba de 0,
-     * existe una tendencia ascendente clara.
-     */
     status = "up";
     label = "Ascendente";
   } else {
-    /*
-     * Si el intervalo incluye 0,
-     * no hay evidencia suficientemente clara
-     * de una dirección sostenida.
-     */
     status = "stable";
     label = "Estable";
   }
@@ -80,6 +76,7 @@ export function getWeightTrend(records) {
     confidenceLow: Number(regression.confidenceLow.toFixed(2)),
 
     confidenceHigh: Number(regression.confidenceHigh.toFixed(2)),
+    variability: Number(regression.residualStdDev.toFixed(2)),
 
     weeksUsed: weeklyAverages.length,
 
@@ -169,6 +166,8 @@ function calculateRegression(values) {
   const residualVariance =
     degreesOfFreedom > 0 ? residualSumSquares / degreesOfFreedom : 0;
 
+  const residualStdDev = Math.sqrt(residualVariance);
+
   const slopeStandardError =
     denominator > 0 ? Math.sqrt(residualVariance / denominator) : 0;
 
@@ -180,6 +179,7 @@ function calculateRegression(values) {
     slope,
     confidenceLow: slope - margin,
     confidenceHigh: slope + margin,
+    residualStdDev,
   };
 }
 

@@ -12,7 +12,12 @@ import {
 
 export default function WeightCard({ records }) {
   const weightRecords = records
-    .filter((record) => Number.isFinite(Number(record.weight)))
+    .filter(
+      (record) =>
+        record.date &&
+        Number.isFinite(Number(record.weight)) &&
+        Number(record.weight) > 0,
+    )
     .map((record) => ({
       ...record,
       weight: Number(record.weight),
@@ -98,7 +103,7 @@ export default function WeightCard({ records }) {
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Tendencia del peso</h3>
+          <h3 className="font-semibold">Evolución reciente del peso</h3>
 
           <span className="text-sm text-zinc-400">
             Últimos {chartData.length} registros
@@ -221,26 +226,22 @@ function DifferenceIcon({ value, small = false }) {
   const size = small ? 16 : 24;
 
   if (value < 0) {
-    return <TrendingDown size={size} className="text-emerald-400" />;
+    return <TrendingDown size={size} className="text-sky-400" />;
   }
 
   if (value > 0) {
-    return <TrendingUp size={size} className="text-amber-400" />;
+    return <TrendingUp size={size} className="text-sky-400" />;
   }
 
   return <Minus size={size} className="text-zinc-500" />;
 }
 
 function getDifferenceColor(value) {
-  if (value < 0) {
-    return "text-emerald-400 text-sm";
+  if (value === 0) {
+    return "text-zinc-500 text-sm";
   }
 
-  if (value > 0) {
-    return "text-amber-400 text-sm";
-  }
-
-  return "text-zinc-500 text-sm";
+  return "text-sky-400 text-sm";
 }
 
 function formatDate(date) {
