@@ -15,6 +15,7 @@ import {
 
 export default function ProgressPhotosCard({ records, onShowToast }) {
   const [progressPhotos, setProgressPhotos] = useState([]);
+  const [measurements, setMeasurements] = useState([]);
 
   const [form, setForm] = useState({
     date: getLocalDate(),
@@ -62,8 +63,10 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       setLoading(true);
 
       const photos = await getProgressPhotos();
+      const savedMeasurements = getMeasurements();
 
       setProgressPhotos(photos);
+      setMeasurements(savedMeasurements);
     } catch (error) {
       console.error("No se pudieron cargar las fotos:", error);
 
@@ -231,6 +234,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
           hips: parseOptionalNumber(form.hips),
         });
       }
+      setMeasurements(getMeasurements());
 
       setProgressPhotos((previousPhotos) =>
         [progress, ...previousPhotos].sort((a, b) =>
@@ -434,7 +438,10 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         </button>
       </form>
       <div className="mb-8">
-        <PhotoComparison progressPhotos={progressPhotos} />
+        <PhotoComparison
+          progressPhotos={progressPhotos}
+          measurements={measurements}
+        />
       </div>
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -487,6 +494,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         {selectedProgress && (
           <PhotoGalleryModal
             progress={selectedProgress}
+            measurements={measurements}
             onClose={() => setSelectedProgress(null)}
             onDelete={async () => {
               const id = selectedProgress.id;
@@ -615,7 +623,7 @@ function GalleryCard({ progress, onClick, progressPhotos }) {
     </button>
   );
 }
-function PhotoGalleryModal({ progress, onClose, onDelete }) {
+function PhotoGalleryModal({ progress, measurements, onClose, onDelete }) {
   const [activePosition, setActivePosition] = useState(
     progress.front ? "front" : progress.side ? "side" : "back",
   );
@@ -654,6 +662,9 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
   ];
 
   const activeFile = progress[activePosition];
+  const sessionMeasurements = measurements.find(
+    (item) => item.date === progress.date,
+  );
 
   return (
     <div
@@ -674,6 +685,39 @@ function PhotoGalleryModal({ progress, onClose, onDelete }) {
                 ? `${Number(progress.weight).toFixed(1)} kg`
                 : "Sin peso registrado"}
             </p>
+            {sessionMeasurements && (
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                {sessionMeasurements.waist && (
+                  <span>
+                    Cintura {Number(sessionMeasurements.waist).toFixed(1)} cm
+                  </span>
+                )}
+
+                {sessionMeasurements.chest && (
+                  <span>
+                    Pecho {Number(sessionMeasurements.chest).toFixed(1)} cm
+                  </span>
+                )}
+
+                {sessionMeasurements.arm && (
+                  <span>
+                    Brazo {Number(sessionMeasurements.arm).toFixed(1)} cm
+                  </span>
+                )}
+
+                {sessionMeasurements.thigh && (
+                  <span>
+                    Muslo {Number(sessionMeasurements.thigh).toFixed(1)} cm
+                  </span>
+                )}
+
+                {sessionMeasurements.hips && (
+                  <span>
+                    Cadera {Number(sessionMeasurements.hips).toFixed(1)} cm
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <button

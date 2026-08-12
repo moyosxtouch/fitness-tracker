@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeftRight, UserRound, Weight } from "lucide-react";
 
-export default function PhotoComparison({ progressPhotos }) {
+export default function PhotoComparison({ progressPhotos, measurements = [] }) {
   const [beforeId, setBeforeId] = useState("");
   const [afterId, setAfterId] = useState("");
   const [position, setPosition] = useState("front");
@@ -89,14 +89,38 @@ export default function PhotoComparison({ progressPhotos }) {
         <RecordSelector
           label="Antes"
           value={beforeId}
-          onChange={setBeforeId}
+          disabledId={afterId}
+          onChange={(id) => {
+            const selected = progressPhotos.find((item) => item.id === id);
+            const after = progressPhotos.find((item) => item.id === afterId);
+
+            if (selected && after && selected.date > after.date) {
+              setBeforeId(after.id);
+              setAfterId(selected.id);
+              return;
+            }
+
+            setBeforeId(id);
+          }}
           progressPhotos={progressPhotos}
         />
 
         <RecordSelector
           label="Después"
           value={afterId}
-          onChange={setAfterId}
+          disabledId={beforeId}
+          onChange={(id) => {
+            const selected = progressPhotos.find((item) => item.id === id);
+            const before = progressPhotos.find((item) => item.id === beforeId);
+
+            if (selected && before && selected.date < before.date) {
+              setBeforeId(selected.id);
+              setAfterId(before.id);
+              return;
+            }
+
+            setAfterId(id);
+          }}
           progressPhotos={progressPhotos}
         />
       </div>
@@ -107,12 +131,28 @@ export default function PhotoComparison({ progressPhotos }) {
         <ComparisonPhoto title="DESPUÉS" progress={after} position={position} />
       </div>
 
-      {before && after && <ComparisonStats before={before} after={after} />}
+      {before && after && (
+        <>
+          <ComparisonStats before={before} after={after} />
+
+          <MeasurementsComparison
+            before={before}
+            after={after}
+            measurements={measurements}
+          />
+        </>
+      )}
     </div>
   );
 }
 
-function RecordSelector({ label, value, onChange, progressPhotos }) {
+function RecordSelector({
+  label,
+  value,
+  onChange,
+  progressPhotos,
+  disabledId,
+}) {
   return (
     <label className="grid gap-2">
       <span className="text-xs uppercase tracking-wide text-zinc-500">
@@ -125,7 +165,11 @@ function RecordSelector({ label, value, onChange, progressPhotos }) {
         className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
       >
         {progressPhotos.map((progress) => (
-          <option key={progress.id} value={progress.id}>
+          <option
+            key={progress.id}
+            value={progress.id}
+            disabled={progress.id === disabledId}
+          >
             {formatDate(progress.date)}
             {progress.weight
               ? ` · ${Number(progress.weight).toFixed(1)} kg`
@@ -268,6 +312,91 @@ function ComparisonStats({ before, after }) {
             : null
         }
       />
+    </div>
+  );
+}
+
+function MeasurementsComparison({ before, after, measurements }) {
+  const beforeMeasurements = measurements.find(
+    (item) => item.date === before.date,
+  );
+
+  const afterMeasurements = measurements.find(
+    (item) => item.date === after.date,
+  );
+
+  if (!beforeMeasurements && !afterMeasurements) {
+    return null;
+  }
+
+  const measurementTypes = [
+    ["waist", "Cintura"],
+    ["chest", "Pecho"],
+    ["arm", "Brazo"],
+    ["thigh", "Muslo"],
+    ["hips", "Cadera"],
+  ];
+
+  return (
+    <div className="mt-5">
+      <div className="mb-3">
+        <h4 className="font-semibold">Medidas corporales</h4>
+
+        <p className="mt-1 text-xs text-zinc-500">
+          Comparación de las medidas registradas en ambas fechas.
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-zinc-800">
+        <div className="grid grid-cols-4 bg-zinc-900 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <span>Medida</span>
+          <span className="text-center">Antes</span>
+          <span className="text-center">Después</span>
+          <span className="text-right">Cambio</span>
+        </div>
+
+        {measurementTypes.map(([key, label]) => (
+          <MeasurementComparisonRow
+            key={key}
+            label={label}
+            beforeValue={beforeMeasurements?.[key]}
+            afterValue={afterMeasurements?.[key]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+function MeasurementComparisonRow({ label, beforeValue, afterValue }) {
+  const beforeNumber = Number(beforeValue);
+  const afterNumber = Number(afterValue);
+
+  const hasBefore = Number.isFinite(beforeNumber) && beforeNumber > 0;
+
+  const hasAfter = Number.isFinite(afterNumber) && afterNumber > 0;
+
+  const difference =
+    hasBefore && hasAfter
+      ? Number((afterNumber - beforeNumber).toFixed(1))
+      : null;
+
+  return (
+    <div className="grid grid-cols-4 items-center border-t border-zinc-800 px-4 py-3 text-sm">
+      <span className="font-medium">{label}</span>
+
+      <span className="text-center text-zinc-400">
+        {hasBefore ? `${beforeNumber.toFixed(1)} cm` : "—"}
+      </span>
+
+      <span className="text-center text-zinc-400">
+        {hasAfter ? `${afterNumber.toFixed(1)} cm` : "—"}
+      </span>
+
+      <span className="text-right font-semibold">
+        {difference !== null
+          ? `${difference > 0 ? "+" : ""}${difference.toFixed(1)} cm`
+          : "—"}
+      </span>
     </div>
   );
 }
