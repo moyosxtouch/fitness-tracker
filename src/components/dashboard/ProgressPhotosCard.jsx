@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Camera, ImagePlus, Trash2, UserRound } from "lucide-react";
+import { Camera, ImagePlus, Trash2, UserRound, Pencil } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
 import { generateTestPhotos } from "../../utils/generateTestPhotos";
@@ -16,6 +16,7 @@ import {
 export default function ProgressPhotosCard({ records, onShowToast }) {
   const [progressPhotos, setProgressPhotos] = useState([]);
   const [measurements, setMeasurements] = useState([]);
+  const [editingProgress, setEditingProgress] = useState(null);
 
   const [form, setForm] = useState({
     date: getLocalDate(),
@@ -187,6 +188,49 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
     }
   }
 
+  function startEditingProgress(progress) {
+    const sessionMeasurements = measurements.find(
+      (item) => item.date === progress.date,
+    );
+
+    setEditingProgress(progress);
+
+    setForm({
+      date: progress.date,
+
+      weight: hasValidNumber(progress.weight) ? String(progress.weight) : "",
+
+      waist: sessionMeasurements?.waist
+        ? String(sessionMeasurements.waist)
+        : "",
+
+      chest: sessionMeasurements?.chest
+        ? String(sessionMeasurements.chest)
+        : "",
+
+      arm: sessionMeasurements?.arm ? String(sessionMeasurements.arm) : "",
+
+      thigh: sessionMeasurements?.thigh
+        ? String(sessionMeasurements.thigh)
+        : "",
+
+      hips: sessionMeasurements?.hips ? String(sessionMeasurements.hips) : "",
+
+      front: progress.front ?? null,
+      side: progress.side ?? null,
+      back: progress.back ?? null,
+    });
+
+    setSelectedProgress(null);
+
+    requestAnimationFrame(() => {
+      document.getElementById("progress-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -321,8 +365,10 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         </span>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
+     <form
+  id="progress-form"
+  onSubmit={handleSubmit}
+>
         className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
       >
         <div className="mb-5 grid gap-4 sm:grid-cols-2">
@@ -496,6 +542,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             progress={selectedProgress}
             measurements={measurements}
             onClose={() => setSelectedProgress(null)}
+            onEdit={() => startEditingProgress(selectedProgress)}
             onDelete={async () => {
               const id = selectedProgress.id;
 
@@ -623,7 +670,13 @@ function GalleryCard({ progress, onClick, progressPhotos }) {
     </button>
   );
 }
-function PhotoGalleryModal({ progress, measurements, onClose, onDelete }) {
+function PhotoGalleryModal({
+  progress,
+  measurements,
+  onClose,
+  onDelete,
+  onEdit,
+}) {
   const [activePosition, setActivePosition] = useState(
     progress.front ? "front" : progress.side ? "side" : "back",
   );
@@ -761,11 +814,19 @@ function PhotoGalleryModal({ progress, measurements, onClose, onDelete }) {
         </div>
 
         <div className="shrink-0 border-t border-zinc-800 bg-zinc-900 px-4 py-3 sm:px-5">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-4">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-5 font-semibold text-zinc-300 transition hover:border-lime-400 hover:text-lime-400"
+            >
+              <Pencil size={18} />
+              Editar sesión
+            </button>
             <button
               type="button"
               onClick={onDelete}
-              className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-3 font-semibold text-red-400 transition hover:bg-red-500/20"
+              className="inline-flex h-12  items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-3 font-semibold text-red-400 transition hover:bg-red-500/20 whitespace-nowrap"
             >
               <Trash2 size={18} />
               Eliminar sesión
@@ -937,4 +998,9 @@ function formatShortDate(date) {
     month: "short",
     year: "numeric",
   });
+}
+function hasValidNumber(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number) && number > 0;
 }
