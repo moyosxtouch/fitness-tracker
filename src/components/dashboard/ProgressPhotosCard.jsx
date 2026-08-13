@@ -9,6 +9,7 @@ import {
   saveProgressPhoto,
 } from "../../utils/photoStorage";
 import {
+  deleteMeasurementByDate,
   getMeasurements,
   saveMeasurement,
 } from "../../utils/measurementStorage";
@@ -245,13 +246,15 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
     }
 
     try {
+      const wasEditing = Boolean(editingProgress);
       const weight =
         form.weight.trim() !== ""
           ? Number(form.weight)
           : findWeightForDate(records, form.date);
 
       const progress = {
-        id: crypto.randomUUID(),
+        id: editingProgress?.id ?? crypto.randomUUID(),
+
         date: form.date,
 
         weight: Number.isFinite(weight) ? weight : null,
@@ -260,10 +263,15 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         side: form.side,
         back: form.back,
 
-        createdAt: new Date().toISOString(),
+        createdAt: editingProgress?.createdAt ?? new Date().toISOString(),
+
+        updatedAt: editingProgress ? new Date().toISOString() : null,
       };
 
       await saveProgressPhoto(progress);
+      if (editingProgress && editingProgress.date !== form.date) {
+        deleteMeasurementByDate(editingProgress.date);
+      }
       const hasMeasurements =
         form.waist || form.chest || form.arm || form.thigh || form.hips;
 
@@ -280,11 +288,15 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       }
       setMeasurements(getMeasurements());
 
-      setProgressPhotos((previousPhotos) =>
-        [progress, ...previousPhotos].sort((a, b) =>
+      setProgressPhotos((previousPhotos) => {
+        const photosWithoutCurrent = previousPhotos.filter(
+          (item) => item.id !== progress.id,
+        );
+
+        return [progress, ...photosWithoutCurrent].sort((a, b) =>
           b.date.localeCompare(a.date),
-        ),
-      );
+        );
+      });
 
       setForm({
         date: getLocalDate(),
@@ -298,6 +310,8 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         side: null,
         back: null,
       });
+
+      setEditingProgress(null);
 
       onShowToast?.({
         title: "Fotos guardadas",
@@ -315,30 +329,32 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   }
 
   async function handleDelete(id) {
-    const confirmed = window.confirm("¿Eliminar este registro fotográfico?");
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
+      const progressToDelete = progressPhotos.find((item) => item.id === id);
+
       await deleteProgressPhoto(id);
 
+      if (progressToDelete?.date) {
+        deleteMeasurementByDate(progressToDelete.date);
+      }
+
       setProgressPhotos((previousPhotos) =>
-        previousPhotos.filter((photo) => photo.id !== id),
+        previousPhotos.filter((item) => item.id !== id),
       );
 
+      setMeasurements(getMeasurements());
+
       onShowToast?.({
-        title: "Registro fotográfico eliminado",
-        message: "Las fotografías se eliminaron correctamente.",
+        title: "Sesión eliminada",
+        message: "Las fotografías y medidas de la sesión fueron eliminadas.",
         type: "info",
       });
     } catch (error) {
-      console.error("No se pudieron eliminar las fotos:", error);
+      console.error("No se pudo eliminar la sesión:", error);
 
       onShowToast?.({
-        title: "Error al eliminar",
-        message: "No se pudieron borrar las fotografías.",
+        title: "No se pudo eliminar",
+        message: "Ocurrió un problema eliminando la sesión de progreso.",
         type: "error",
       });
     }
@@ -365,10 +381,9 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         </span>
       </div>
 
-     <form
-  id="progress-form"
-  onSubmit={handleSubmit}
->
+      <form
+        id="progress-form"
+        onSubmit={handleSubmit}
         className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
       >
         <div className="mb-5 grid gap-4 sm:grid-cols-2">

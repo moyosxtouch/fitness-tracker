@@ -51,11 +51,11 @@ export function saveMeasurement(measurement) {
   return measurementToSave;
 }
 
-export function deleteMeasurement(id) {
+export function deleteMeasurementByDate(date) {
   const measurements = getMeasurements();
 
   const updatedMeasurements = measurements.filter(
-    (measurement) => measurement.id !== id,
+    (measurement) => measurement.date !== date,
   );
 
   localStorage.setItem(
