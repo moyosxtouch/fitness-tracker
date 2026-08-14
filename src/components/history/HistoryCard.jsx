@@ -522,7 +522,7 @@ function RecordDetailModal({
             </p>
 
             <h3 className="mt-1 text-xl font-bold sm:text-2xl">
-              {formatLongDate(record.date)}
+              {formatLongDate(isEditing ? form.date : record.date)}
             </h3>
           </div>
 
