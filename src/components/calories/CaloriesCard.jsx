@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Flame } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame } from "lucide-react";
 
 import {
   Area,
@@ -16,6 +16,7 @@ import {
 
 export default function CaloriesCard({ records, goalCalories }) {
   const [view, setView] = useState("week");
+  const [periodOffset, setPeriodOffset] = useState(0);
 
   const calorieRecords = useMemo(
     () =>
@@ -43,7 +44,15 @@ export default function CaloriesCard({ records, goalCalories }) {
 
   const latestRecord = calorieRecords[calorieRecords.length - 1];
 
-  const selectedDate = parseLocalDate(latestRecord.date);
+  const latestDate = parseLocalDate(latestRecord.date);
+
+  const selectedDate = new Date(latestDate);
+
+  if (view === "week") {
+    selectedDate.setDate(selectedDate.getDate() + periodOffset * 7);
+  } else {
+    selectedDate.setMonth(selectedDate.getMonth() + periodOffset);
+  }
 
   const weekDates = getWeekDates(selectedDate);
 
@@ -55,22 +64,31 @@ export default function CaloriesCard({ records, goalCalories }) {
     return {
       date: dateKey,
       label: formatWeekday(date),
-      calories: record?.calories ?? 0,
+      calories: record?.calories ?? null,
       hasRecord: Boolean(record),
     };
   });
 
-  const monthKey = latestRecord.date.slice(0, 7);
+  const monthKey = formatMonthKey(selectedDate);
 
   const monthlyRecords = calorieRecords.filter(
     (record) => record.date.slice(0, 7) === monthKey,
   );
 
-  const monthlyData = monthlyRecords.map((record) => ({
-    date: record.date,
-    label: record.date.slice(8, 10),
-    calories: record.calories,
-  }));
+  const monthDates = getMonthDates(selectedDate);
+
+  const monthlyData = monthDates.map((date) => {
+    const dateKey = formatDateKey(date);
+
+    const record = calorieRecords.find((item) => item.date === dateKey);
+
+    return {
+      date: dateKey,
+      label: String(date.getDate()).padStart(2, "0"),
+      calories: record?.calories ?? null,
+      hasRecord: Boolean(record),
+    };
+  });
 
   const weeklyEntries = weeklyData.filter((record) => record.hasRecord);
 
@@ -94,10 +112,12 @@ export default function CaloriesCard({ records, goalCalories }) {
 
   const remaining = goalCalories - latestRecord.calories;
 
-  const progress = Math.min(
-    Math.round((latestRecord.calories / goalCalories) * 100),
-    100,
-  );
+  const progressPercentage =
+    goalCalories > 0
+      ? Math.round((latestRecord.calories / goalCalories) * 100)
+      : 0;
+
+  const progressWidth = Math.min(progressPercentage, 100);
 
   return (
     <section className="bg-zinc-900 rounded-3xl border border-zinc-800 p-6">
@@ -114,10 +134,13 @@ export default function CaloriesCard({ records, goalCalories }) {
           </div>
         </div>
 
-        <div className="flex overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
+        <div className="inline-flex overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
           <button
             type="button"
-            onClick={() => setView("week")}
+            onClick={() => {
+              setView("week");
+              setPeriodOffset(0);
+            }}
             className={`px-4 py-2 text-sm font-semibold transition ${
               view === "week"
                 ? "bg-lime-400 text-black"
@@ -129,7 +152,10 @@ export default function CaloriesCard({ records, goalCalories }) {
 
           <button
             type="button"
-            onClick={() => setView("month")}
+            onClick={() => {
+              setView("month");
+              setPeriodOffset(0);
+            }}
             className={`px-4 py-2 text-sm font-semibold transition ${
               view === "month"
                 ? "bg-lime-400 text-black"
@@ -175,14 +201,14 @@ export default function CaloriesCard({ records, goalCalories }) {
         <div className="flex justify-between text-sm text-zinc-400 mb-2">
           <span>Progreso del último registro</span>
 
-          <span>{progress}%</span>
+          <span>{progressPercentage}%</span>
         </div>
 
         <div className="w-full h-4 bg-zinc-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-lime-400 rounded-full transition-all duration-500"
             style={{
-              width: `${progress}%`,
+              width: `${progressWidth}%`,
             }}
           />
         </div>
@@ -203,13 +229,33 @@ export default function CaloriesCard({ records, goalCalories }) {
               {view === "week" ? "Consumo semanal" : "Consumo mensual"}
             </h3>
 
-            <p className="text-xs text-zinc-500 mt-1">
-              {view === "week"
-                ? formatWeekRange(weekDates)
-                : formatMonthTitle(selectedDate)}
-            </p>
-          </div>
+            <div className="mt-1 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPeriodOffset((current) => current - 1)}
+                className="rounded-lg p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                title={view === "week" ? "Semana anterior" : "Mes anterior"}
+              >
+                <ChevronLeft size={16} />
+              </button>
 
+              <p className="min-w-36 text-center text-xs text-zinc-500">
+                {view === "week"
+                  ? formatWeekRange(weekDates)
+                  : formatMonthTitle(selectedDate)}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setPeriodOffset((current) => current + 1)}
+                disabled={periodOffset >= 0}
+                className="rounded-lg p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+                title={view === "week" ? "Semana siguiente" : "Mes siguiente"}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
           <div className="text-right">
             <p className="text-sm text-zinc-400">Total</p>
 
@@ -323,6 +369,11 @@ export default function CaloriesCard({ records, goalCalories }) {
                   strokeWidth={3}
                   fill="#a3e635"
                   fillOpacity={0.15}
+                  dot={{
+                    r: 3,
+                    fill: "#a3e635",
+                    strokeWidth: 0,
+                  }}
                   activeDot={{
                     r: 6,
                   }}
@@ -446,4 +497,21 @@ function getRemainingMessage(remaining) {
   }
 
   return "Alcanzaste exactamente tu meta diaria.";
+}
+function formatMonthKey(date) {
+  const year = date.getFullYear();
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+}
+function getMonthDates(referenceDate) {
+  const year = referenceDate.getFullYear();
+  const month = referenceDate.getMonth();
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    return new Date(year, month, index + 1);
+  });
 }
