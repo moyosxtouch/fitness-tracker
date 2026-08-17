@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarSearch, ChevronRight, Moon, RotateCcw } from "lucide-react";
+import { CalendarSearch } from "lucide-react";
 import RecordDetailModal from "./RecordDetailModal";
 import MobileRecordCard from "./MobileRecordCard";
-import PerformanceBadge from "./PerformanceBadge";
-import {
-  formatDate,
-  formatMonth,
-  getRecoveryColor,
-  isValidNumber,
-} from "./historyUtils";
+
+import HistoryTable from "./HistoryTable";
+import HistoryPagination from "./HistoryPagination";
+import HistoryFilters from "./HistoryFilters";
+import { formatDate } from "./historyUtils";
 export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
   const [monthFilter, setMonthFilter] = useState("all");
   const [performanceFilter, setPerformanceFilter] = useState("all");
@@ -81,8 +79,6 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
     setSelectedRecord(null);
   }
 
-  const filtersAreActive = monthFilter !== "all" || performanceFilter !== "all";
-
   if (records.length === 0) {
     return (
       <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
@@ -121,53 +117,14 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
       </div>
 
       <div className="mb-6 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-        <label className="grid gap-2">
-          <span className="text-xs uppercase tracking-wide text-zinc-500">
-            Mes
-          </span>
-
-          <select
-            value={monthFilter}
-            onChange={(event) => setMonthFilter(event.target.value)}
-            className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
-          >
-            <option value="all">Todos los meses</option>
-
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>
-                {formatMonth(month)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="grid gap-2">
-          <span className="text-xs uppercase tracking-wide text-zinc-500">
-            Rendimiento
-          </span>
-
-          <select
-            value={performanceFilter}
-            onChange={(event) => setPerformanceFilter(event.target.value)}
-            className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
-          >
-            <option value="all">Todos</option>
-            <option value="Óptimo">Óptimo</option>
-            <option value="Regular">Regular</option>
-            <option value="Fallido">Fallido</option>
-            <option value="Descanso">Descanso</option>
-          </select>
-        </label>
-
-        <button
-          type="button"
-          onClick={clearFilters}
-          disabled={!filtersAreActive}
-          className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-3 font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <RotateCcw size={18} />
-          Limpiar
-        </button>
+        <HistoryFilters
+          availableMonths={availableMonths}
+          monthFilter={monthFilter}
+          performanceFilter={performanceFilter}
+          onMonthChange={setMonthFilter}
+          onPerformanceChange={setPerformanceFilter}
+          onClear={clearFilters}
+        />
       </div>
 
       {filteredRecords.length === 0 ? (
@@ -180,85 +137,13 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
         </div>
       ) : (
         <>
-          {/* DESKTOP */}
-          <div className="hidden overflow-hidden rounded-2xl border border-zinc-800 md:block">
-            <table className="w-full">
-              <thead className="bg-zinc-950">
-                <tr className="text-left">
-                  <TableHeader>Fecha</TableHeader>
-                  <TableHeader>Calorías</TableHeader>
-                  <TableHeader>Peso</TableHeader>
-                  <TableHeader>Rendimiento</TableHeader>
-                  <TableHeader>Sueño</TableHeader>
-                  <TableHeader>Recuperación</TableHeader>
-
-                  <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">
-                    Detalles
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {paginatedRecords.map((record) => (
-                  <tr
-                    key={record.id}
-                    className="border-t border-zinc-800 transition hover:bg-zinc-800/40"
-                  >
-                    <td className="whitespace-nowrap px-4 py-4 font-medium">
-                      {formatDate(record.date)}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {Number(record.calories).toLocaleString("es-MX")} kcal
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {Number(record.weight).toFixed(1)} kg
-                    </td>
-
-                    <td className="px-4 py-4">
-                      <PerformanceBadge performance={record.performance} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {isValidNumber(record.sleepHours) ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <Moon size={15} className="text-indigo-400" />
-                          {Number(record.sleepHours).toFixed(1)} h
-                        </span>
-                      ) : (
-                        <span className="text-zinc-600">—</span>
-                      )}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {isValidNumber(record.recovery) ? (
-                        <span
-                          className={`font-semibold ${getRecoveryColor(
-                            Number(record.recovery),
-                          )}`}
-                        >
-                          {Number(record.recovery)}/10
-                        </span>
-                      ) : (
-                        <span className="text-zinc-600">—</span>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedRecord(record)}
-                        className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-                      >
-                        Ver
-                        <ChevronRight size={17} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <HistoryTable
+            records={paginatedRecords}
+            onOpen={(record) => {
+              setSelectedRecord(record);
+              setIsEditing(false);
+            }}
+          />
 
           {/* MÓVIL */}
           <div className="grid gap-3 md:hidden">
@@ -275,42 +160,14 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
           </div>
         </>
       )}
-      {filteredRecords.length > RECORDS_PER_PAGE && (
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-zinc-800 pt-5 sm:flex-row">
-          <p className="text-sm text-zinc-500">
-            Mostrando {startIndex + 1}–
-            {Math.min(endIndex, filteredRecords.length)} de{" "}
-            {filteredRecords.length}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={currentPage === 1}
-              className="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Anterior
-            </button>
-
-            <span className="px-2 text-sm text-zinc-400">
-              Página <strong className="text-white">{currentPage}</strong> de{" "}
-              {totalPages}
-            </span>
-
-            <button
-              type="button"
-              onClick={() =>
-                setCurrentPage((page) => Math.min(totalPages, page + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
-      )}
+      <HistoryPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        totalRecords={filteredRecords.length}
+        onPageChange={setCurrentPage}
+      />
 
       {selectedRecord && (
         <RecordDetailModal
@@ -332,12 +189,6 @@ export default function HistoryCard({ records, onSaveRecord, onDeleteRecord }) {
         />
       )}
     </section>
-  );
-}
-
-function TableHeader({ children }) {
-  return (
-    <th className="px-4 py-3 text-sm font-medium text-zinc-400">{children}</th>
   );
 }
 
