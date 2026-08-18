@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Camera, ImagePlus, Trash2, UserRound, Pencil } from "lucide-react";
+import { Camera } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
-import MeasurementField from "./progress/MeasurementField";
-import GalleryCard from "./progress/GalleryCard";
+
+import ProgressPhotoForm from "./progress/ProgressPhotoForm";
 import { generateTestPhotos } from "../../utils/generateTestPhotos";
-import PhotoInput from "./progress/PhotoInput";
+import ProgressGallery from "./progress/ProgressGallery";
+
 import {
   findWeightForDate,
-  formatDate,
   getLocalDate,
   hasValidNumber,
   parseOptionalNumber,
@@ -390,443 +390,33 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
           {progressPhotos.length === 1 ? "registro" : "registros"}
         </span>
       </div>
-
-      <form
-        id="progress-form"
-        onSubmit={handleSubmit}
-        className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
-      >
-        <div className="mb-5 grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2">
-            <span className="text-sm text-zinc-400">Fecha</span>
-
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              required
-              className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-sm text-zinc-400">Peso</span>
-
-            <input
-              type="number"
-              step="0.1"
-              min="1"
-              name="weight"
-              placeholder="Se detecta automáticamente si existe"
-              value={form.weight}
-              onChange={handleChange}
-              className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none focus:border-lime-400"
-            />
-          </label>
-        </div>
-        <div className="mb-5">
-          <div className="mb-3">
-            <p className="font-semibold">Medidas corporales</p>
-
-            <p className="mt-1 text-xs text-zinc-500">
-              Opcional · usa centímetros y procura medir siempre en condiciones
-              similares.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <MeasurementField
-              label="Cintura"
-              name="waist"
-              value={form.waist}
-              onChange={handleChange}
-            />
-
-            <MeasurementField
-              label="Pecho"
-              name="chest"
-              value={form.chest}
-              onChange={handleChange}
-            />
-
-            <MeasurementField
-              label="Brazo"
-              name="arm"
-              value={form.arm}
-              onChange={handleChange}
-            />
-
-            <MeasurementField
-              label="Muslo"
-              name="thigh"
-              value={form.thigh}
-              onChange={handleChange}
-            />
-
-            <MeasurementField
-              label="Cadera"
-              name="hips"
-              value={form.hips}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <PhotoInput
-            label="Frontal"
-            preview={previews.front}
-            onChange={(event) => handlePhotoChange(event, "front")}
-          />
-
-          <PhotoInput
-            label="Lateral"
-            preview={previews.side}
-            onChange={(event) => handlePhotoChange(event, "side")}
-          />
-
-          <PhotoInput
-            label="Espalda"
-            preview={previews.back}
-            onChange={(event) => handlePhotoChange(event, "back")}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 p-3 font-bold text-black transition hover:bg-lime-300"
-        >
-          <ImagePlus size={19} />
-          Guardar sesión de progreso
-        </button>
-        <button
-          type="button"
-          onClick={handleGenerateTestPhotos}
-          className="mt-3 w-full rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 font-semibold text-violet-300 transition hover:bg-violet-500/20"
-        >
-          🧪 Generar 5 fotos de prueba
-        </button>
-      </form>
+      <ProgressPhotoForm
+        form={form}
+        previews={previews}
+        handleSubmit={handleSubmit}
+        handleChange={handleChange}
+        handlePhotoChange={handlePhotoChange}
+        handleGenerateTestPhotos={handleGenerateTestPhotos}
+      />
       <div className="mb-8">
         <PhotoComparison
           progressPhotos={progressPhotos}
           measurements={measurements}
         />
       </div>
-      <div>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="font-semibold">Galería de progreso</h3>
-
-            <p className="mt-1 text-sm text-zinc-500">
-              Selecciona una sesión para ver todas las fotografías.
-            </p>
-          </div>
-
-          <span className="text-sm text-zinc-500">
-            {progressPhotos.length}{" "}
-            {progressPhotos.length === 1 ? "sesión" : "sesiones"}
-          </span>
-        </div>
-
-        {loading ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center text-zinc-400">
-            Cargando fotografías...
-          </div>
-        ) : progressPhotos.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-center">
-            <Camera size={36} className="mx-auto mb-3 text-zinc-600" />
-
-            <p className="font-semibold">Todavía no tienes fotografías.</p>
-
-            <p className="mt-2 text-sm text-zinc-500">
-              Agrega tu primera sesión de progreso.
-            </p>
-          </div>
-        ) : (
-          <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
-            {progressPhotos.map((progress) => (
-              <div
-                key={progress.id}
-                className="w-[72vw] max-w-[250px] shrink-0 snap-start md:w-auto md:max-w-none"
-              >
-                <GalleryCard
-                  progress={progress}
-                  progressPhotos={progressPhotos}
-                  onClick={() => {
-                    setSelectedProgress(progress);
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        {selectedProgress && (
-          <PhotoGalleryModal
-            progress={selectedProgress}
-            measurements={measurements}
-            onClose={() => setSelectedProgress(null)}
-            onEdit={() => startEditingProgress(selectedProgress)}
-            onDelete={async () => {
-              const id = selectedProgress.id;
-
-              await handleDelete(id);
-
-              setSelectedProgress(null);
-            }}
-          />
-        )}
-      </div>
+      <ProgressGallery
+        loading={loading}
+        progressPhotos={progressPhotos}
+        measurements={measurements}
+        selectedProgress={selectedProgress}
+        onSelect={setSelectedProgress}
+        onClose={() => setSelectedProgress(null)}
+        onEdit={startEditingProgress}
+        onDelete={async (progress) => {
+          await handleDelete(progress.id);
+          setSelectedProgress(null);
+        }}
+      />
     </section>
-  );
-}
-
-function PhotoGalleryModal({
-  progress,
-  measurements,
-  onClose,
-  onDelete,
-  onEdit,
-}) {
-  const [activePosition, setActivePosition] = useState(
-    progress.front ? "front" : progress.side ? "side" : "back",
-  );
-
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  const positions = [
-    {
-      key: "front",
-      label: "Frontal",
-    },
-    {
-      key: "side",
-      label: "Lateral",
-    },
-    {
-      key: "back",
-      label: "Espalda",
-    },
-  ];
-
-  const activeFile = progress[activePosition];
-  const sessionMeasurements = measurements.find(
-    (item) => item.date === progress.date,
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="flex h-[96vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900 shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-900/95 p-4 backdrop-blur sm:p-5">
-          <div>
-            <h3 className="text-xl font-bold">{formatDate(progress.date)}</h3>
-
-            <p className="mt-1 text-sm text-zinc-400">
-              {progress.weight
-                ? `${Number(progress.weight).toFixed(1)} kg`
-                : "Sin peso registrado"}
-            </p>
-            {sessionMeasurements && (
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                {sessionMeasurements.waist && (
-                  <span>
-                    Cintura {Number(sessionMeasurements.waist).toFixed(1)} cm
-                  </span>
-                )}
-
-                {sessionMeasurements.chest && (
-                  <span>
-                    Pecho {Number(sessionMeasurements.chest).toFixed(1)} cm
-                  </span>
-                )}
-
-                {sessionMeasurements.arm && (
-                  <span>
-                    Brazo {Number(sessionMeasurements.arm).toFixed(1)} cm
-                  </span>
-                )}
-
-                {sessionMeasurements.thigh && (
-                  <span>
-                    Muslo {Number(sessionMeasurements.thigh).toFixed(1)} cm
-                  </span>
-                )}
-
-                {sessionMeasurements.hips && (
-                  <span>
-                    Cadera {Number(sessionMeasurements.hips).toFixed(1)} cm
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4">
-          <div className="mb-4 flex shrink-0 justify-center">
-            <div className="inline-flex overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
-              {positions.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={!progress[key]}
-                  onClick={() => setActivePosition(key)}
-                  className={`px-4 py-2 text-sm font-semibold transition ${
-                    activePosition === key
-                      ? "bg-lime-400 text-black"
-                      : "text-zinc-400 hover:text-white"
-                  } disabled:cursor-not-allowed disabled:opacity-30`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center justify-center">
-            <ModalStoredPhoto
-              file={activeFile}
-              label={
-                positions.find((item) => item.key === activePosition)?.label
-              }
-            />
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-zinc-800 bg-zinc-900 px-4 py-3 sm:px-5">
-          <div className="flex items-center justify-end gap-4">
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-5 font-semibold text-zinc-300 transition hover:border-lime-400 hover:text-lime-400"
-            >
-              <Pencil size={18} />
-              Editar sesión
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="inline-flex h-12  items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-3 font-semibold text-red-400 transition hover:bg-red-500/20 whitespace-nowrap"
-            >
-              <Trash2 size={18} />
-              Eliminar sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ModalStoredPhoto({ file, label }) {
-  const [url, setUrl] = useState(null);
-
-  useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return undefined;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-
-    setUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [file]);
-
-  if (!url) {
-    return (
-      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-zinc-950 text-zinc-600">
-        Sin fotografía
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full w-full min-h-0 items-center justify-center">
-      <img
-        src={url}
-        alt={label || "Fotografía de progreso"}
-        className="h-full max-h-full w-auto max-w-full rounded-2xl object-contain shadow-xl"
-      />
-    </div>
-  );
-}
-function StoredPhoto({ file, label }) {
-  const [url, setUrl] = useState(null);
-
-  useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return undefined;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-
-    setUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [file]);
-
-  if (!file) {
-    return (
-      <div className="flex aspect-[3/4] items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-600">
-        <div className="text-center">
-          <UserRound size={30} className="mx-auto mb-2" />
-
-          <p className="text-xs">Sin foto {label.toLowerCase()}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <figure>
-      <img
-        src={url}
-        alt={label}
-        className="aspect-[3/4] w-full rounded-2xl object-cover"
-      />
-
-      <figcaption className="mt-2 text-center text-xs text-zinc-500">
-        {label}
-      </figcaption>
-    </figure>
   );
 }
