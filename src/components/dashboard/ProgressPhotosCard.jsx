@@ -2,8 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Camera, ImagePlus, Trash2, UserRound, Pencil } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
+import MeasurementField from "./progress/MeasurementField";
+import GalleryCard from "./progress/GalleryCard";
 import { generateTestPhotos } from "../../utils/generateTestPhotos";
 import PhotoInput from "./progress/PhotoInput";
+import {
+  findWeightForDate,
+  formatDate,
+  getLocalDate,
+  hasValidNumber,
+  parseOptionalNumber,
+} from "./progress/progressUtils";
 import {
   deleteProgressPhoto,
   getProgressPhotos,
@@ -573,86 +582,6 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   );
 }
 
-function GalleryCard({ progress, onClick, progressPhotos }) {
-  const cover = progress.front || progress.side || progress.back;
-
-  const [url, setUrl] = useState(null);
-
-  useEffect(() => {
-    if (!cover) {
-      setUrl(null);
-      return undefined;
-    }
-
-    const objectUrl = URL.createObjectURL(cover);
-
-    setUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [cover]);
-
-  const oldestDate =
-    progressPhotos.length > 0
-      ? progressPhotos.reduce(
-          (oldest, item) => (item.date < oldest ? item.date : oldest),
-          progressPhotos[0].date,
-        )
-      : progress.date;
-
-  const days = getDaysBetween(oldestDate, progress.date);
-
-  const weeks = Math.floor(days / 7);
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 text-left transition hover:-translate-y-1 hover:border-zinc-700 hover:shadow-xl"
-    >
-      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
-        {url ? (
-          <img
-            src={url}
-            alt={`Progreso ${progress.date}`}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-zinc-600">
-            <UserRound size={38} />
-          </div>
-        )}
-
-        <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
-          <div className="rounded-full bg-lime-400 px-2 py-1 text-[10px] font-bold text-black">
-            Día {days}
-          </div>
-        </div>
-
-        {progress.testData && (
-          <div className="absolute left-2 top-2 rounded-full bg-violet-500/90 px-2 py-1 text-[10px] font-semibold text-white">
-            TEST
-          </div>
-        )}
-
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-12">
-          <p className="text-base font-bold text-white">
-            {progress.weight
-              ? `${Number(progress.weight).toFixed(1)} kg`
-              : "Sin peso"}
-          </p>
-          <p className="text-[11px] font-semibold text-lime-300">
-            Semana {weeks}
-          </p>
-
-          <p className="mt-0.5 text-xs text-zinc-300">
-            {formatShortDate(progress.date)}
-          </p>
-        </div>
-      </div>
-    </button>
-  );
-}
 function PhotoGalleryModal({
   progress,
   measurements,
@@ -900,90 +829,4 @@ function StoredPhoto({ file, label }) {
       </figcaption>
     </figure>
   );
-}
-
-function findWeightForDate(records, date) {
-  const record = records.find((item) => item.date === date);
-
-  if (!record) {
-    return null;
-  }
-
-  const weight = Number(record.weight);
-
-  return Number.isFinite(weight) ? weight : null;
-}
-function MeasurementField({ label, name, value, onChange }) {
-  return (
-    <label className="grid gap-2">
-      <span className="text-sm text-zinc-400">{label}</span>
-
-      <div className="relative">
-        <input
-          type="number"
-          step="0.1"
-          min="1"
-          name={name}
-          placeholder="Ej. 80"
-          value={value}
-          onChange={onChange}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-800 p-3 pr-10 outline-none focus:border-lime-400"
-        />
-
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">
-          cm
-        </span>
-      </div>
-    </label>
-  );
-}
-function parseOptionalNumber(value) {
-  if (value === "") {
-    return null;
-  }
-
-  const number = Number(value);
-
-  return Number.isFinite(number) && number > 0 ? number : null;
-}
-
-function getLocalDate() {
-  const date = new Date();
-
-  const year = date.getFullYear();
-
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function formatDate(date) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-function getDaysBetween(firstDate, currentDate) {
-  const first = new Date(`${firstDate}T00:00:00`);
-
-  const current = new Date(`${currentDate}T00:00:00`);
-
-  const difference = current.getTime() - first.getTime();
-
-  return Math.max(0, Math.round(difference / (1000 * 60 * 60 * 24)));
-}
-function formatShortDate(date) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-function hasValidNumber(value) {
-  const number = Number(value);
-
-  return Number.isFinite(number) && number > 0;
 }
