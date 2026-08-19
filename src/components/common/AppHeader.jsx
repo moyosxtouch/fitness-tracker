@@ -7,6 +7,7 @@ import {
   PlusCircle,
   Settings,
 } from "lucide-react";
+import UserMenu from "./UserMenu";
 
 const links = [
   {
@@ -41,7 +42,7 @@ const links = [
   },
 ];
 
-export default function AppHeader({ onOpenSettings }) {
+export default function AppHeader({ user, onOpenSettings, onLogout }) {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -82,6 +83,7 @@ export default function AppHeader({ onOpenSettings }) {
 
             <span className="hidden md:inline">Configuración</span>
           </button>
+          <UserMenu user={user} onLogout={onLogout} />
         </div>
       </div>
     </header>

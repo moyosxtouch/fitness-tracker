@@ -14,6 +14,9 @@ import PerformanceCard from "./components/performance/PerformanceCard";
 import HistoryCard from "./components/history/HistoryCard";
 import SettingsModal from "./components/dashboard/SettingsModal";
 import ProgressPhotosCard from "./components/dashboard/ProgressPhotosCard";
+import AuthScreen from "./components/auth/AuthScreen";
+import { useAuth } from "./context/AuthContext";
+import { logoutUser } from "./services/authService";
 
 import { generateTestData } from "./utils/generateTestData";
 const RECORDS_STORAGE_KEY = "fitness-tracker-records";
@@ -26,6 +29,7 @@ const initialSettings = {
 };
 
 function App() {
+  const { user, authLoading } = useAuth();
   const [records, setRecords] = useState(() => {
     try {
       const savedRecords = localStorage.getItem(RECORDS_STORAGE_KEY);
@@ -198,10 +202,24 @@ function App() {
       });
     });
   }
+  if (authLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-400">
+        Cargando...
+      </main>
+    );
+  }
 
+  if (!user) {
+    return <AuthScreen />;
+  }
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
-      <AppHeader onOpenSettings={() => setSettingsOpen(true)} />
+      <AppHeader
+        user={user}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onLogout={logoutUser}
+      />
 
       <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
         <section id="inicio" className="scroll-mt-24">
