@@ -2,7 +2,6 @@ import {
   Activity,
   BarChart3,
   Camera,
-  DatabaseBackup,
   History,
   PlusCircle,
   Settings,
@@ -34,11 +33,6 @@ const links = [
     href: "#historial",
     label: "Historial",
     icon: History,
-  },
-  {
-    href: "#datos",
-    label: "Datos",
-    icon: DatabaseBackup,
   },
 ];
 

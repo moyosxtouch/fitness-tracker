@@ -3,7 +3,7 @@ import AppHeader from "./components/common/AppHeader";
 import TodaySummary from "./components/dashboard/TodaySummary";
 import AddRecordCard from "./components/dashboard/AddRecordCard";
 import Toast from "./components/common/Toast";
-import DataManagementCard from "./components/dashboard/DataManagementCard";
+
 import InsightsCard from "./components/dashboard/InsightsCard";
 import WeeklyComparisonCard from "./components/dashboard/WeeklyComparisonCard";
 import PhaseStatusCard from "./components/dashboard/PhaseStatusCard";
@@ -17,10 +17,14 @@ import ProgressPhotosCard from "./components/dashboard/ProgressPhotosCard";
 import AuthScreen from "./components/auth/AuthScreen";
 import { useAuth } from "./context/AuthContext";
 import { logoutUser } from "./services/authService";
+import {
+  deleteUserRecord,
+  getUserData,
+  saveUserRecord,
+  saveUserSettings,
+} from "./services/firestoreService";
 
-import { generateTestData } from "./utils/generateTestData";
-const RECORDS_STORAGE_KEY = "fitness-tracker-records";
-const SETTINGS_STORAGE_KEY = "fitness-tracker-settings";
+
 
 const initialSettings = {
   goalCalories: 2100,
@@ -30,74 +34,124 @@ const initialSettings = {
 
 function App() {
   const { user, authLoading } = useAuth();
-  const [records, setRecords] = useState(() => {
-    try {
-      const savedRecords = localStorage.getItem(RECORDS_STORAGE_KEY);
-
-      return savedRecords ? JSON.parse(savedRecords) : [];
-    } catch (error) {
-      console.error("No se pudieron cargar los registros:", error);
-
-      return [];
-    }
-  });
-
-  const [settings, setSettings] = useState(() => {
-    try {
-      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-
-      return savedSettings ? JSON.parse(savedSettings) : initialSettings;
-    } catch (error) {
-      console.error("No se pudo cargar la configuración:", error);
-
-      return initialSettings;
-    }
-  });
+  const [records, setRecords] = useState([]);
+  const [settings, setSettings] = useState(initialSettings);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const [editingRecord, setEditingRecord] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState(null);
   useEffect(() => {
-    try {
-      localStorage.setItem(RECORDS_STORAGE_KEY, JSON.stringify(records));
-    } catch (error) {
-      console.error("No se pudieron guardar los registros:", error);
+    let isActive = true;
+
+    async function loadUserData() {
+      if (!user) {
+        setRecords([]);
+        setSettings(initialSettings);
+        setDataLoading(false);
+        return;
+      }
+
+      try {
+        setDataLoading(true);
+
+        const userData = await getUserData(user.uid);
+
+        if (!isActive) {
+          return;
+        }
+
+        setRecords(userData.records);
+
+        setSettings({
+          ...initialSettings,
+          ...(userData.settings ?? {}),
+        });
+      } catch (error) {
+        console.error("No se pudieron cargar los datos de Firestore:", error);
+
+        if (isActive) {
+          setToast({
+            title: "Error al cargar",
+            message: "No se pudieron obtener tus datos de Firebase.",
+            type: "error",
+          });
+        }
+      } finally {
+        if (isActive) {
+          setDataLoading(false);
+        }
+      }
     }
-  }, [records]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-    } catch (error) {
-      console.error("No se pudo guardar la configuración:", error);
+    loadUserData();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
+  async function saveRecord(record) {
+    if (!user) {
+      return;
     }
-  }, [settings]);
 
-  function saveRecord(record) {
-    setRecords((previousRecords) => {
-      const recordToSave = {
-        ...record,
-        id: record.id ?? crypto.randomUUID(),
-      };
+    const isEditing = Boolean(record.id);
 
-      const recordsWithoutDuplicate = previousRecords.filter(
-        (item) =>
-          item.id !== recordToSave.id && item.date !== recordToSave.date,
-      );
+    const recordToSave = {
+      ...record,
+      id: record.id ?? crypto.randomUUID(),
+    };
 
-      return [recordToSave, ...recordsWithoutDuplicate].sort((a, b) =>
-        b.date.localeCompare(a.date),
-      );
-    });
+    const duplicateRecord = records.find(
+      (item) => item.date === recordToSave.date && item.id !== recordToSave.id,
+    );
 
-    setEditingRecord(null);
-    showToast({
-      title: record.id ? "Registro actualizado" : "Registro guardado",
-      message: `Se guardó la información del ${formatToastDate(record.date)}.`,
-    });
+    try {
+      await saveUserRecord(user.uid, recordToSave);
+
+      if (duplicateRecord) {
+        await deleteUserRecord(user.uid, duplicateRecord.id);
+      }
+
+      setRecords((previousRecords) => {
+        const recordsWithoutDuplicate = previousRecords.filter(
+          (item) =>
+            item.id !== recordToSave.id && item.date !== recordToSave.date,
+        );
+
+        return [recordToSave, ...recordsWithoutDuplicate].sort((a, b) =>
+          b.date.localeCompare(a.date),
+        );
+      });
+
+      setEditingRecord(null);
+
+      showToast({
+        title: isEditing ? "Registro actualizado" : "Registro guardado",
+        message: `Se guardó la información del ${formatToastDate(
+          recordToSave.date,
+        )}.`,
+      });
+    } catch (error) {
+      console.error("No se pudo guardar el registro:", error);
+
+      showToast({
+        title: "Error al guardar",
+        message: "No se pudo guardar el registro en Firebase.",
+        type: "error",
+      });
+    }
   }
 
-  function deleteRecord(id) {
+async function deleteRecord(id) {
+  if (!user) {
+    return;
+  }
+
+  try {
+    await deleteUserRecord(user.uid, id);
+
     setRecords((previousRecords) =>
       previousRecords.filter((record) => record.id !== id),
     );
@@ -111,8 +165,24 @@ function App() {
       message: "El registro se eliminó correctamente.",
       type: "info",
     });
+  } catch (error) {
+    console.error("No se pudo eliminar el registro:", error);
+
+    showToast({
+      title: "Error al eliminar",
+      message: "No se pudo eliminar el registro de Firebase.",
+      type: "error",
+    });
   }
-  function saveSettings(newSettings) {
+}
+async function saveSettings(newSettings) {
+  if (!user) {
+    return;
+  }
+
+  try {
+    await saveUserSettings(user.uid, newSettings);
+
     setSettings(newSettings);
 
     showToast({
@@ -123,61 +193,19 @@ function App() {
         newSettings.goalWeight,
       ).toFixed(1)} kg`,
     });
-  }
-  function importData(data) {
-    const importedRecords = [...data.records].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    );
-
-    setRecords(importedRecords);
-
-    setSettings({
-      ...initialSettings,
-      ...data.settings,
-    });
-
-    setEditingRecord(null);
-  }
-  function loadTestData(trend) {
-    const labels = {
-      descending: "descendente",
-      maintenance: "de mantenimiento",
-      ascending: "ascendente",
-    };
-
-    const label = labels[trend] ?? "de prueba";
-
-    const confirmed = window.confirm(
-      `Esto reemplazará tus registros actuales por 365 registros con tendencia ${label}. ¿Continuar?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const testRecords = generateTestData(365, {
-      trend,
-    });
-
-    setRecords(testRecords);
-    setEditingRecord(null);
+  } catch (error) {
+    console.error("No se pudo guardar la configuración:", error);
 
     showToast({
-      title: "Datos de prueba generados",
-      message: `Se crearon 365 registros con tendencia ${label}.`,
-      type: "info",
+      title: "Error al guardar",
+      message: "No se pudo guardar la configuración en Firebase.",
+      type: "error",
     });
   }
-  function deleteAllData() {
-    setRecords([]);
-    setEditingRecord(null);
+}
+  
 
-    showToast({
-      title: "Registros eliminados",
-      message: "Se eliminó todo el historial correctamente.",
-      type: "info",
-    });
-  }
+ 
   function showToast({ title, message = "", type = "success" }) {
     setToast({
       title,
@@ -202,7 +230,7 @@ function App() {
       });
     });
   }
-  if (authLoading) {
+  if (authLoading || (user && dataLoading)) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-400">
         Cargando...
@@ -272,19 +300,9 @@ function App() {
           />
         </section>
 
-        <section id="datos" className="scroll-mt-24">
-          <DataManagementCard
-            records={records}
-            settings={settings}
-            onImportData={importData}
-            onDeleteAllData={deleteAllData}
-            onGenerateTestData={loadTestData}
-          />
-        </section>
-
         <footer className="pb-4 pt-2 text-center text-xs text-zinc-600">
-          Fitness Tracker v1.0.0 Tus datos permanecen almacenados localmente en
-          este navegador.
+          Fitness Tracker v1.0.0 · Tus registros se sincronizan de forma segura
+          con tu cuenta.
         </footer>
       </div>
       <SettingsModal
