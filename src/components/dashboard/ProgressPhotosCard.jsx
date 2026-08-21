@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, Cloud, LoaderCircle } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
-
+import {
+  connectGoogleDrive,
+  getOrCreateFitnessTrackerFolder,
+  isGoogleDriveConnected,
+} from "../../services/googleDriveService";
 import ProgressPhotoForm from "./progress/ProgressPhotoForm";
 import { generateTestPhotos } from "../../utils/generateTestPhotos";
 import ProgressGallery from "./progress/ProgressGallery";
@@ -44,7 +48,11 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
   const [loading, setLoading] = useState(true);
   const [selectedProgress, setSelectedProgress] = useState(null);
+  const [driveConnected, setDriveConnected] = useState(() =>
+    isGoogleDriveConnected(),
+  );
 
+  const [driveConnecting, setDriveConnecting] = useState(false);
   useEffect(() => {
     loadPhotos();
   }, []);
@@ -369,6 +377,32 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       });
     }
   }
+  async function handleConnectGoogleDrive() {
+    try {
+      setDriveConnecting(true);
+
+      await connectGoogleDrive();
+      await getOrCreateFitnessTrackerFolder();
+
+      setDriveConnected(true);
+
+      onShowToast({
+        title: "Google Drive conectado",
+        message: "La aplicación ya puede guardar tus fotografías en Drive.",
+      });
+    } catch (error) {
+      console.error("No se pudo conectar Google Drive:", error);
+
+      onShowToast({
+        title: "Error de conexión",
+        message:
+          error.message || "No se pudo autorizar el acceso a Google Drive.",
+        type: "error",
+      });
+    } finally {
+      setDriveConnecting(false);
+    }
+  }
 
   return (
     <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
@@ -389,6 +423,46 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
           {progressPhotos.length}{" "}
           {progressPhotos.length === 1 ? "registro" : "registros"}
         </span>
+      </div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+              driveConnected
+                ? "bg-lime-400/10 text-lime-400"
+                : "bg-zinc-800 text-zinc-400"
+            }`}
+          >
+            <Cloud size={20} />
+          </div>
+
+          <div>
+            <p className="font-semibold">Google Drive</p>
+
+            <p className="text-sm text-zinc-500">
+              {driveConnected
+                ? "Conectado para sincronizar fotografías"
+                : "Conecta tu cuenta para guardar fotografías"}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleConnectGoogleDrive}
+          disabled={driveConnecting || driveConnected}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-4 py-2 text-sm font-bold text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {driveConnecting && (
+            <LoaderCircle className="animate-spin" size={17} />
+          )}
+
+          {driveConnecting
+            ? "Conectando..."
+            : driveConnected
+              ? "Conectado"
+              : "Conectar Drive"}
+        </button>
       </div>
       <ProgressPhotoForm
         form={form}
