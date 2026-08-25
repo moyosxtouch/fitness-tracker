@@ -53,3 +53,40 @@ export function saveUserSettings(userId, settings) {
     { merge: true },
   );
 }
+export async function getUserProgressSessions(userId) {
+  const sessionsSnapshot = await getDocs(
+    collection(db, "users", userId, "progressSessions"),
+  );
+
+  return sessionsSnapshot.docs
+    .map((sessionDocument) => ({
+      id: sessionDocument.id,
+      ...sessionDocument.data(),
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export async function saveUserProgressSession(userId, session) {
+  const sessionReference = doc(
+    db,
+    "users",
+    userId,
+    "progressSessions",
+    session.id,
+  );
+
+  await setDoc(
+    sessionReference,
+    {
+      ...session,
+      updatedAt: serverTimestamp(),
+    },
+    {
+      merge: true,
+    },
+  );
+}
+
+export async function deleteUserProgressSession(userId, sessionId) {
+  await deleteDoc(doc(db, "users", userId, "progressSessions", sessionId));
+}

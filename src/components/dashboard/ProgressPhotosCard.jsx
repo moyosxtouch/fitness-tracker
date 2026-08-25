@@ -4,13 +4,19 @@ import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
 import {
   connectGoogleDrive,
+  downloadGoogleDrivePhoto,
   getOrCreateFitnessTrackerFolder,
   isGoogleDriveConnected,
+  uploadGoogleDrivePhoto,
 } from "../../services/googleDriveService";
+import { useAuth } from "../../context/AuthContext";
 import ProgressPhotoForm from "./progress/ProgressPhotoForm";
 import { generateTestPhotos } from "../../utils/generateTestPhotos";
 import ProgressGallery from "./progress/ProgressGallery";
-
+import {
+  getUserProgressSessions,
+  saveUserProgressSession,
+} from "../../services/firestoreService";
 import {
   findWeightForDate,
   getLocalDate,
@@ -29,6 +35,7 @@ import {
 } from "../../utils/measurementStorage";
 
 export default function ProgressPhotosCard({ records, onShowToast }) {
+  const { user } = useAuth();
   const [progressPhotos, setProgressPhotos] = useState([]);
   const [measurements, setMeasurements] = useState([]);
   const [editingProgress, setEditingProgress] = useState(null);
@@ -253,6 +260,23 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (!user) {
+      return;
+    }
+
+    if (!driveConnected || !isGoogleDriveConnected()) {
+      onShowToast?.({
+        title: "Conecta Google Drive",
+        message:
+          "Debes conectar Drive antes de guardar una sesión fotográfica.",
+        type: "error",
+      });
+
+      setDriveConnected(false);
+
+      return;
+    }
+
     if (!form.front && !form.side && !form.back) {
       onShowToast?.({
         title: "Agrega una fotografía",
@@ -265,45 +289,86 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
     try {
       const wasEditing = Boolean(editingProgress);
+
       const weight =
         form.weight.trim() !== ""
           ? Number(form.weight)
           : findWeightForDate(records, form.date);
 
+      const sessionId = editingProgress?.id ?? crypto.randomUUID();
+
+      const existingDriveFiles = editingProgress?.driveFiles ?? {};
+
+      const driveFiles = {};
+
+      for (const position of ["front", "side", "back"]) {
+        const photo = form[position];
+
+        if (!photo) {
+          continue;
+        }
+
+        const uploadedPhoto = await uploadGoogleDrivePhoto({
+          blob: photo,
+          sessionId,
+          position,
+          fileId: existingDriveFiles[position]?.id ?? null,
+        });
+
+        driveFiles[position] = uploadedPhoto;
+      }
+
+      const sessionMeasurements = {
+        waist: parseOptionalNumber(form.waist),
+        chest: parseOptionalNumber(form.chest),
+        arm: parseOptionalNumber(form.arm),
+        thigh: parseOptionalNumber(form.thigh),
+        hips: parseOptionalNumber(form.hips),
+      };
+
       const progress = {
-        id: editingProgress?.id ?? crypto.randomUUID(),
-
+        id: sessionId,
         date: form.date,
-
         weight: Number.isFinite(weight) ? weight : null,
 
         front: form.front,
         side: form.side,
         back: form.back,
 
+        driveFiles,
+
         createdAt: editingProgress?.createdAt ?? new Date().toISOString(),
 
-        updatedAt: editingProgress ? new Date().toISOString() : null,
+        updatedAt: wasEditing ? new Date().toISOString() : null,
       };
 
+      await saveUserProgressSession(user.uid, {
+        id: progress.id,
+        date: progress.date,
+        weight: progress.weight,
+        measurements: sessionMeasurements,
+        driveFiles,
+        createdAt: progress.createdAt,
+      });
+
       await saveProgressPhoto(progress);
+
       if (editingProgress && editingProgress.date !== form.date) {
         deleteMeasurementByDate(editingProgress.date);
       }
-      const hasMeasurements =
-        form.waist || form.chest || form.arm || form.thigh || form.hips;
+
+      const hasMeasurements = Object.values(sessionMeasurements).some(
+        (value) => value !== null,
+      );
 
       if (hasMeasurements) {
         saveMeasurement({
           date: form.date,
-          weight: Number.isFinite(weight) ? weight : null,
-          waist: parseOptionalNumber(form.waist),
-          chest: parseOptionalNumber(form.chest),
-          arm: parseOptionalNumber(form.arm),
-          thigh: parseOptionalNumber(form.thigh),
-          hips: parseOptionalNumber(form.hips),
+          weight: progress.weight,
+          ...sessionMeasurements,
         });
       }
+
       setMeasurements(getMeasurements());
 
       setProgressPhotos((previousPhotos) => {
@@ -332,15 +397,21 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       setEditingProgress(null);
 
       onShowToast?.({
-        title: "Fotos guardadas",
-        message: "Tu progreso fotográfico se guardó correctamente.",
+        title: wasEditing ? "Sesión actualizada" : "Fotos sincronizadas",
+        message:
+          "Las fotografías se guardaron en Drive y los datos en Firebase.",
       });
     } catch (error) {
-      console.error("No se pudieron guardar las fotos:", error);
+      console.error("No se pudieron sincronizar las fotos:", error);
+
+      if (!isGoogleDriveConnected()) {
+        setDriveConnected(false);
+      }
 
       onShowToast?.({
-        title: "No se pudo guardar",
-        message: "Ocurrió un problema almacenando las fotografías.",
+        title: "No se pudo sincronizar",
+        message:
+          error.message || "Ocurrió un problema guardando las fotografías.",
         type: "error",
       });
     }
@@ -377,13 +448,87 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       });
     }
   }
+  async function loadCloudPhotos() {
+    if (!user) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const cloudSessions = await getUserProgressSessions(user.uid);
+
+      const downloadedSessions = await Promise.all(
+        cloudSessions.map(async (session) => {
+          const front = session.driveFiles?.front?.id
+            ? await downloadGoogleDrivePhoto(session.driveFiles.front.id)
+            : null;
+
+          const side = session.driveFiles?.side?.id
+            ? await downloadGoogleDrivePhoto(session.driveFiles.side.id)
+            : null;
+
+          const back = session.driveFiles?.back?.id
+            ? await downloadGoogleDrivePhoto(session.driveFiles.back.id)
+            : null;
+
+          const progress = {
+            id: session.id,
+            date: session.date,
+            weight: session.weight ?? null,
+            front,
+            side,
+            back,
+            driveFiles: session.driveFiles ?? {},
+            createdAt: session.createdAt ?? new Date().toISOString(),
+            updatedAt: null,
+          };
+
+          await saveProgressPhoto(progress);
+
+          if (session.measurements) {
+            saveMeasurement({
+              date: session.date,
+              weight: session.weight ?? null,
+              waist: session.measurements.waist ?? null,
+              chest: session.measurements.chest ?? null,
+              arm: session.measurements.arm ?? null,
+              thigh: session.measurements.thigh ?? null,
+              hips: session.measurements.hips ?? null,
+            });
+          }
+
+          return progress;
+        }),
+      );
+
+      const localPhotos = await getProgressPhotos();
+
+      const combinedPhotos = [
+        ...downloadedSessions,
+        ...localPhotos.filter(
+          (localPhoto) =>
+            !downloadedSessions.some(
+              (cloudPhoto) =>
+                cloudPhoto.id === localPhoto.id ||
+                cloudPhoto.date === localPhoto.date,
+            ),
+        ),
+      ].sort((a, b) => b.date.localeCompare(a.date));
+
+      setProgressPhotos(combinedPhotos);
+      setMeasurements(getMeasurements());
+    } finally {
+      setLoading(false);
+    }
+  }
   async function handleConnectGoogleDrive() {
     try {
       setDriveConnecting(true);
 
       await connectGoogleDrive();
       await getOrCreateFitnessTrackerFolder();
-
+      await loadCloudPhotos();
       setDriveConnected(true);
 
       onShowToast({
