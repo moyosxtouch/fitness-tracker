@@ -1,6 +1,9 @@
 const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_DRIVE_CLIENT_ID;
+const DRIVE_TOKEN_STORAGE_KEY = "fitness-tracker-drive-token";
+
+const DRIVE_TOKEN_EXPIRATION_KEY = "fitness-tracker-drive-token-expiration";
 
 const DRIVE_API_URL = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD_URL = "https://www.googleapis.com/upload/drive/v3";
@@ -9,8 +12,10 @@ const FITNESS_TRACKER_FOLDER_NAME = "Fitness Tracker";
 
 let fitnessTrackerFolderId = null;
 
-let accessToken = null;
-let tokenExpiresAt = 0;
+let accessToken = sessionStorage.getItem(DRIVE_TOKEN_STORAGE_KEY);
+
+let tokenExpiresAt =
+  Number(sessionStorage.getItem(DRIVE_TOKEN_EXPIRATION_KEY)) || 0;
 
 export async function connectGoogleDrive() {
   if (!GOOGLE_CLIENT_ID) {
@@ -30,10 +35,18 @@ export async function connectGoogleDrive() {
           return;
         }
 
+        const expiresInSeconds = Number(response.expires_in) || 3600;
+
         accessToken = response.access_token;
 
-        tokenExpiresAt =
-          Date.now() + Math.max(response.expires_in - 60, 0) * 1000;
+        tokenExpiresAt = Date.now() + Math.max(expiresInSeconds - 60, 0) * 1000;
+
+        sessionStorage.setItem(DRIVE_TOKEN_STORAGE_KEY, accessToken);
+
+        sessionStorage.setItem(
+          DRIVE_TOKEN_EXPIRATION_KEY,
+          String(tokenExpiresAt),
+        );
 
         resolve(accessToken);
       },
@@ -50,13 +63,19 @@ export async function connectGoogleDrive() {
     });
 
     tokenClient.requestAccessToken({
-      prompt: "consent",
+      prompt: "",
     });
   });
 }
 
 export function isGoogleDriveConnected() {
-  return Boolean(accessToken) && Date.now() < tokenExpiresAt;
+  const connected = Boolean(accessToken) && Date.now() < tokenExpiresAt;
+
+  if (!connected) {
+    clearStoredDriveToken();
+  }
+
+  return connected;
 }
 
 export function getGoogleDriveAccessToken() {
@@ -69,6 +88,7 @@ export function getGoogleDriveAccessToken() {
 
 export async function disconnectGoogleDrive() {
   if (!accessToken) {
+    clearStoredDriveToken();
     return;
   }
 
@@ -76,8 +96,7 @@ export async function disconnectGoogleDrive() {
 
   const tokenToRevoke = accessToken;
 
-  accessToken = null;
-  tokenExpiresAt = 0;
+  clearStoredDriveToken();
 
   await new Promise((resolve) => {
     window.google.accounts.oauth2.revoke(tokenToRevoke, resolve);
@@ -298,4 +317,11 @@ function getExtensionFromMimeType(mimeType) {
   }
 
   return "jpg";
+}
+function clearStoredDriveToken() {
+  accessToken = null;
+  tokenExpiresAt = 0;
+
+  sessionStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(DRIVE_TOKEN_EXPIRATION_KEY);
 }

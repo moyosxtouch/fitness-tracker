@@ -63,8 +63,31 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
   const [driveConnecting, setDriveConnecting] = useState(false);
   useEffect(() => {
-    loadPhotos();
-  }, []);
+    let isActive = true;
+
+    async function initializePhotos() {
+      await loadPhotos();
+
+      if (isActive && user && isGoogleDriveConnected()) {
+        try {
+          setDriveConnected(true);
+          await loadCloudPhotos();
+        } catch (error) {
+          console.error("No se pudieron sincronizar las fotos:", error);
+
+          if (isActive) {
+            setDriveConnected(false);
+          }
+        }
+      }
+    }
+
+    initializePhotos();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
 
   const previews = useMemo(
     () => ({
