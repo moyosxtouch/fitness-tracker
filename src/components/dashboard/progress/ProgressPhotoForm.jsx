@@ -8,7 +8,6 @@ export default function ProgressPhotoForm({
   handleSubmit,
   handleChange,
   handlePhotoChange,
-  handleGenerateTestPhotos,
 }) {
   return (
     <form
@@ -119,13 +118,6 @@ export default function ProgressPhotoForm({
       >
         <ImagePlus size={19} />
         Guardar sesión de progreso
-      </button>
-      <button
-        type="button"
-        onClick={handleGenerateTestPhotos}
-        className="mt-3 w-full rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 font-semibold text-violet-300 transition hover:bg-violet-500/20"
-      >
-        🧪 Generar 5 fotos de prueba
       </button>
     </form>
   );

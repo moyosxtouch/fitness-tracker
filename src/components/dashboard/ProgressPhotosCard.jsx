@@ -8,12 +8,14 @@ import {
   getOrCreateFitnessTrackerFolder,
   isGoogleDriveConnected,
   uploadGoogleDrivePhoto,
+  deleteGoogleDriveFile,
 } from "../../services/googleDriveService";
 import { useAuth } from "../../context/AuthContext";
 import ProgressPhotoForm from "./progress/ProgressPhotoForm";
-import { generateTestPhotos } from "../../utils/generateTestPhotos";
+
 import ProgressGallery from "./progress/ProgressGallery";
 import {
+  deleteUserProgressSession,
   getUserProgressSessions,
   saveUserProgressSession,
 } from "../../services/firestoreService";
@@ -104,61 +106,6 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
       });
     } finally {
       setLoading(false);
-    }
-  }
-  async function handleGenerateTestPhotos() {
-    const confirmed = window.confirm(
-      "¿Generar 5 registros fotográficos de prueba?",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const generatedRecords = await generateTestPhotos();
-
-      if (generatedRecords.length === 0) {
-        onShowToast?.({
-          title: "Fotos de prueba existentes",
-
-          message: "Los 5 registros de prueba ya estaban guardados.",
-
-          type: "info",
-        });
-
-        return;
-      }
-
-      setProgressPhotos((previousPhotos) => {
-        const combined = [...generatedRecords, ...previousPhotos];
-
-        const unique = combined.filter(
-          (item, index, array) =>
-            index === array.findIndex((other) => other.id === item.id),
-        );
-
-        return unique.sort((a, b) => b.date.localeCompare(a.date));
-      });
-
-      onShowToast?.({
-        title: "Fotos de prueba generadas",
-
-        message: `Se agregaron ${generatedRecords.length} sesiones fotográficas.`,
-
-        type: "success",
-      });
-    } catch (error) {
-      console.error("Error generando fotografías de prueba:", error);
-
-      onShowToast?.({
-        title: "Error al generar fotos",
-
-        message:
-          error.message || "No se pudieron generar las fotografías de prueba.",
-
-        type: "error",
-      });
     }
   }
 
@@ -418,12 +365,37 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   }
 
   async function handleDelete(id) {
-    try {
-      const progressToDelete = progressPhotos.find((item) => item.id === id);
+    const progressToDelete = progressPhotos.find((item) => item.id === id);
 
+    if (!progressToDelete || !user) {
+      return;
+    }
+
+    const driveFileIds = Object.values(progressToDelete.driveFiles ?? {})
+      .map((file) => file?.id)
+      .filter(Boolean);
+
+    if (driveFileIds.length > 0 && !isGoogleDriveConnected()) {
+      setDriveConnected(false);
+
+      onShowToast?.({
+        title: "Conecta Google Drive",
+        message: "Debes conectar Drive para eliminar esta sesión sincronizada.",
+        type: "error",
+      });
+
+      return;
+    }
+
+    try {
+      await Promise.all(
+        driveFileIds.map((fileId) => deleteGoogleDriveFile(fileId)),
+      );
+
+      await deleteUserProgressSession(user.uid, id);
       await deleteProgressPhoto(id);
 
-      if (progressToDelete?.date) {
+      if (progressToDelete.date) {
         deleteMeasurementByDate(progressToDelete.date);
       }
 
@@ -433,17 +405,25 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
       setMeasurements(getMeasurements());
 
+      if (editingProgress?.id === id) {
+        setEditingProgress(null);
+      }
+
       onShowToast?.({
         title: "Sesión eliminada",
-        message: "Las fotografías y medidas de la sesión fueron eliminadas.",
+        message: "Las fotografías y medidas se eliminaron de Drive y Firebase.",
         type: "info",
       });
     } catch (error) {
       console.error("No se pudo eliminar la sesión:", error);
 
+      if (!isGoogleDriveConnected()) {
+        setDriveConnected(false);
+      }
+
       onShowToast?.({
         title: "No se pudo eliminar",
-        message: "Ocurrió un problema eliminando la sesión de progreso.",
+        message: error.message || "Ocurrió un problema eliminando la sesión.",
         type: "error",
       });
     }
@@ -615,7 +595,6 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         handleSubmit={handleSubmit}
         handleChange={handleChange}
         handlePhotoChange={handlePhotoChange}
-        handleGenerateTestPhotos={handleGenerateTestPhotos}
       />
       <div className="mb-8">
         <PhotoComparison
