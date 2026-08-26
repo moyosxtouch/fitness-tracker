@@ -325,12 +325,3 @@ function clearStoredDriveToken() {
   sessionStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
   sessionStorage.removeItem(DRIVE_TOKEN_EXPIRATION_KEY);
 }
-
-function clearStoredDriveToken() {
-  accessToken = null;
-  tokenExpiresAt = 0;
-
-  sessionStorage.removeItem(DRIVE_TOKEN_STORAGE_KEY);
-
-  sessionStorage.removeItem(DRIVE_TOKEN_EXPIRATION_KEY);
-}
