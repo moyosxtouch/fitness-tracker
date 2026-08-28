@@ -86,6 +86,13 @@ textarea {
     background-color: transparent !important;
     box-shadow: none !important;
   }
+  #fitness-report .report-legend-calories {
+    background-color: #a3e635 !important;
+  }
+
+  #fitness-report .report-legend-weight {
+    background-color: #a78bfa !important;
+  }
 
   #fitness-report .text-zinc-400,
   #fitness-report .text-zinc-500 {
@@ -106,5 +113,75 @@ textarea {
   #fitness-report tr {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+  #fitness-report .report-chart {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #fitness-report .report-chart .recharts-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #fitness-report .report-chart .recharts-surface {
+    width: 100% !important;
+    height: auto !important;
+  }
+  #fitness-report .report-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  #fitness-report .report-metrics > div {
+    padding: 10px !important;
+  }
+
+  #fitness-report .report-metrics p {
+    margin-top: 4px !important;
+  }
+  #fitness-report .report-chart {
+    margin-bottom: 12px !important;
+  }
+
+  #fitness-report .report-measurements {
+    margin-bottom: 12px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #fitness-report .report-measurements th,
+  #fitness-report .report-measurements td {
+    padding: 5px !important;
+  }
+  #fitness-report .report-photo-comparison {
+    break-before: page;
+    page-break-before: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #fitness-report .report-photo-comparison > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  #fitness-report .report-photo-comparison img {
+    width: 100% !important;
+    height: 260px !important;
+    object-fit: cover !important;
+  }
+  #fitness-report .report-interpretation {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 12px !important;
+    padding: 12px !important;
+  }
+
+  #fitness-report .report-interpretation ul {
+    gap: 4px !important;
+  }
+
+  #fitness-report .report-interpretation p {
+    margin-top: 6px !important;
   }
 }

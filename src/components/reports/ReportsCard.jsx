@@ -1,20 +1,89 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileText, Printer } from "lucide-react";
-
+import ReportPhotoComparison from "./ReportPhotoComparison";
+import { getProgressPhotos } from "../../utils/photoStorage";
 import {
   calculateReportStats,
   filterRecordsByPeriod,
   formatReportDate,
 } from "./reportUtils";
+import ReportTrendChart from "./ReportTrendChart";
+import ReportMeasurements from "./ReportMeasurements";
+import { getMeasurements } from "../../utils/measurementStorage";
+import ReportInterpretation from "./ReportInterpretation";
 
 export default function ReportsCard({ records, settings, user }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [measurements, setMeasurements] = useState(() => getMeasurements());
+  const [progressPhotos, setProgressPhotos] = useState([]);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgressPhotos() {
+      try {
+        const savedProgressPhotos = await getProgressPhotos();
+
+        if (active) {
+          setProgressPhotos(savedProgressPhotos);
+        }
+      } catch (error) {
+        console.error(
+          "No se pudieron cargar las fotografías para el reporte:",
+          error,
+        );
+      }
+    }
+
+    loadProgressPhotos();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const reportRecords = useMemo(
     () => filterRecordsByPeriod(records, startDate, endDate),
     [records, startDate, endDate],
   );
+  const reportMeasurements = useMemo(
+    () =>
+      measurements.filter((measurement) => {
+        if (startDate && measurement.date < startDate) {
+          return false;
+        }
+
+        if (endDate && measurement.date > endDate) {
+          return false;
+        }
+
+        return true;
+      }),
+    [measurements, startDate, endDate],
+  );
+  const reportProgressPhotos = useMemo(
+    () =>
+      progressPhotos
+        .filter((progress) => {
+          if (startDate && progress.date < startDate) {
+            return false;
+          }
+
+          if (endDate && progress.date > endDate) {
+            return false;
+          }
+
+          return true;
+        })
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [progressPhotos, startDate, endDate],
+  );
+
+  const initialProgress =
+    reportProgressPhotos.length >= 2 ? reportProgressPhotos[0] : null;
+
+  const finalProgress =
+    reportProgressPhotos.length >= 2 ? reportProgressPhotos.at(-1) : null;
 
   const stats = useMemo(
     () => calculateReportStats(reportRecords),
@@ -27,7 +96,24 @@ export default function ReportsCard({ records, settings, user }) {
           endDate ? formatReportDate(endDate) : "Actualidad"
         }`
       : "Historial completo";
+  async function handlePrint() {
+    setMeasurements(getMeasurements());
 
+    try {
+      const savedProgressPhotos = await getProgressPhotos();
+
+      setProgressPhotos(savedProgressPhotos);
+    } catch (error) {
+      console.error(
+        "No se pudieron actualizar las fotografías del reporte:",
+        error,
+      );
+    }
+
+    window.setTimeout(() => {
+      window.print();
+    }, 250);
+  }
   return (
     <section className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -45,7 +131,7 @@ export default function ReportsCard({ records, settings, user }) {
 
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={handlePrint}
           disabled={reportRecords.length === 0}
           className="inline-flex items-center gap-2 rounded-xl bg-lime-400 px-4 py-2 font-bold text-black transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -109,7 +195,7 @@ export default function ReportsCard({ records, settings, user }) {
           </div>
         ) : (
           <>
-            <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="report-metrics mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <ReportMetric label="Registros" value={stats.recordCount} />
 
               <ReportMetric
@@ -179,6 +265,16 @@ export default function ReportsCard({ records, settings, user }) {
 
               <ReportMetric label="Fase configurada" value={settings.mode} />
             </div>
+            <ReportTrendChart
+              records={reportRecords}
+              goalCalories={settings.goalCalories}
+            />
+            <ReportInterpretation
+              stats={stats}
+              settings={settings}
+              measurements={reportMeasurements}
+            />
+            <ReportMeasurements measurements={reportMeasurements} />
 
             <div className="mb-6">
               <h4 className="mb-3 font-bold">Distribución de rendimiento</h4>
@@ -243,6 +339,11 @@ export default function ReportsCard({ records, settings, user }) {
                 </tbody>
               </table>
             </div>
+            <ReportPhotoComparison
+              initialProgress={initialProgress}
+              finalProgress={finalProgress}
+              formatDate={formatReportDate}
+            />
           </>
         )}
       </div>
