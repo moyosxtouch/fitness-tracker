@@ -31,7 +31,7 @@ const initialSettings = {
 };
 
 function App() {
-  const { user, authLoading } = useAuth();
+  const { user, authLoading, logout } = useAuth();
   const [records, setRecords] = useState([]);
   const [settings, setSettings] = useState(initialSettings);
   const [dataLoading, setDataLoading] = useState(true);
@@ -239,11 +239,7 @@ function App() {
   }
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
-      <AppHeader
-        user={user}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onLogout={logoutUser}
-      />
+      <AppHeader user={user} onLogout={logout} />
 
       <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6" id="app-content">
         <section id="inicio" className="scroll-mt-24">

@@ -4,7 +4,6 @@ import {
   Camera,
   History,
   PlusCircle,
-  Settings,
   FileText,
 } from "lucide-react";
 import UserMenu from "./UserMenu";
@@ -42,7 +41,7 @@ const links = [
   },
 ];
 
-export default function AppHeader({ user, onOpenSettings, onLogout }) {
+export default function AppHeader({ user, onLogout }) {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:px-6">
@@ -73,16 +72,6 @@ export default function AppHeader({ user, onOpenSettings, onLogout }) {
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:border-lime-400 hover:text-white"
-            aria-label="Abrir configuración"
-          >
-            <Settings size={17} />
-
-            <span className="hidden md:inline">Configuración</span>
-          </button>
           <UserMenu user={user} onLogout={onLogout} />
         </div>
       </div>
