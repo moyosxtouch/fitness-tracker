@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Dumbbell, LoaderCircle } from "lucide-react";
-import { loginUser, registerUser } from "../../services/authService";
+import {
+  loginUser,
+  registerUser,
+  requestPasswordReset,
+} from "../../services/authService";
 
 export default function AuthScreen() {
   const [mode, setMode] = useState("login");
@@ -12,6 +16,8 @@ export default function AuthScreen() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const isRegistering = mode === "register";
 
@@ -27,6 +33,7 @@ export default function AuthScreen() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+    setMessage("");
 
     if (isRegistering && form.name.trim().length < 2) {
       setError("Escribe tu nombre.");
@@ -65,10 +72,40 @@ export default function AuthScreen() {
       setSubmitting(false);
     }
   }
+  async function handlePasswordReset() {
+    setError("");
+    setMessage("");
+
+    if (!form.email.trim()) {
+      setError("Escribe tu correo electrónico para recuperar la contraseña.");
+
+      return;
+    }
+
+    try {
+      setResettingPassword(true);
+
+      await requestPasswordReset(form.email);
+
+      setMessage(
+        "Si el correo está registrado, recibirás un enlace para crear una nueva contraseña.",
+      );
+    } catch (firebaseError) {
+      console.error(
+        "No se pudo enviar el correo de recuperación:",
+        firebaseError,
+      );
+
+      setError(getAuthErrorMessage(firebaseError.code));
+    } finally {
+      setResettingPassword(false);
+    }
+  }
 
   function changeMode(nextMode) {
     setMode(nextMode);
     setError("");
+    setMessage("");
   }
 
   return (
@@ -144,20 +181,27 @@ export default function AuthScreen() {
             autoComplete={isRegistering ? "new-password" : "current-password"}
           />
 
-          {isRegistering && (
-            <AuthField
-              label="Confirmar contraseña"
-              type="password"
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              autoComplete="new-password"
-            />
+          {!isRegistering && (
+            <button
+              type="button"
+              onClick={handlePasswordReset}
+              disabled={resettingPassword}
+              className="-mt-2 justify-self-end text-sm font-semibold text-lime-400 transition hover:text-lime-300 disabled:cursor-wait disabled:opacity-60"
+            >
+              {resettingPassword
+                ? "Enviando correo..."
+                : "¿Olvidaste tu contraseña?"}
+            </button>
           )}
 
           {error && (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
               {error}
+            </div>
+          )}
+          {message && (
+            <div className="rounded-xl border border-lime-400/30 bg-lime-400/10 p-3 text-sm text-lime-300">
+              {message}
             </div>
           )}
 
