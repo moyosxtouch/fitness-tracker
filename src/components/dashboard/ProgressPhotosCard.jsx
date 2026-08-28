@@ -460,6 +460,38 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
     try {
       const cloudSessions = await getUserProgressSessions(user.uid);
+      const localPhotosBeforeSync = await getProgressPhotos();
+
+      const cloudSessionIds = new Set(
+        cloudSessions.map((session) => session.id),
+      );
+
+      /*
+       * Si una sesión local contiene archivos de Drive, significa que ya fue
+       * sincronizada. Si su ID ya no existe en Firestore, fue eliminada desde
+       * otro dispositivo y también debemos quitarla del caché actual.
+       */
+      const deletedCloudSessions = localPhotosBeforeSync.filter(
+        (localPhoto) => {
+          const wasSynchronized = Object.values(
+            localPhoto.driveFiles ?? {},
+          ).some((file) => Boolean(file?.id));
+
+          return wasSynchronized && !cloudSessionIds.has(localPhoto.id);
+        },
+      );
+
+      await Promise.all(
+        deletedCloudSessions.map((progress) =>
+          deleteProgressPhoto(progress.id),
+        ),
+      );
+
+      deletedCloudSessions.forEach((progress) => {
+        if (progress.date) {
+          deleteMeasurementByDate(progress.date);
+        }
+      });
 
       const downloadedSessions = await Promise.all(
         cloudSessions.map(async (session) => {
@@ -484,7 +516,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
             back,
             driveFiles: session.driveFiles ?? {},
             createdAt: session.createdAt ?? new Date().toISOString(),
-            updatedAt: null,
+            updatedAt: session.updatedAt ?? null,
           };
 
           await saveProgressPhoto(progress);
@@ -505,22 +537,40 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         }),
       );
 
-      const localPhotos = await getProgressPhotos();
+      const remainingLocalPhotos = await getProgressPhotos();
 
-      const combinedPhotos = [
+      /*
+       * Conservamos únicamente fotografías puramente locales que todavía no
+       * tengan archivos en Drive. Las sesiones sincronizadas siempre toman
+       * como fuente de verdad a Firestore.
+       */
+      const unsynchronizedLocalPhotos = remainingLocalPhotos.filter(
+        (localPhoto) => {
+          const hasDriveFiles = Object.values(localPhoto.driveFiles ?? {}).some(
+            (file) => Boolean(file?.id),
+          );
+
+          const existsInCloud = cloudSessions.some(
+            (cloudSession) =>
+              cloudSession.id === localPhoto.id ||
+              cloudSession.date === localPhoto.date,
+          );
+
+          return !hasDriveFiles && !existsInCloud;
+        },
+      );
+
+      const synchronizedPhotos = [
         ...downloadedSessions,
-        ...localPhotos.filter(
-          (localPhoto) =>
-            !downloadedSessions.some(
-              (cloudPhoto) =>
-                cloudPhoto.id === localPhoto.id ||
-                cloudPhoto.date === localPhoto.date,
-            ),
-        ),
+        ...unsynchronizedLocalPhotos,
       ].sort((a, b) => b.date.localeCompare(a.date));
 
-      setProgressPhotos(combinedPhotos);
+      setProgressPhotos(synchronizedPhotos);
       setMeasurements(getMeasurements());
+    } catch (error) {
+      console.error("No se pudieron sincronizar las fotografías:", error);
+
+      throw error;
     } finally {
       setLoading(false);
     }
