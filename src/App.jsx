@@ -3,7 +3,7 @@ import AppHeader from "./components/common/AppHeader";
 import TodaySummary from "./components/dashboard/TodaySummary";
 import AddRecordCard from "./components/dashboard/AddRecordCard";
 import Toast from "./components/common/Toast";
-
+import ReportsCard from "./components/reports/ReportsCard";
 import InsightsCard from "./components/dashboard/InsightsCard";
 import WeeklyComparisonCard from "./components/dashboard/WeeklyComparisonCard";
 import PhaseStatusCard from "./components/dashboard/PhaseStatusCard";
@@ -23,8 +23,6 @@ import {
   saveUserRecord,
   saveUserSettings,
 } from "./services/firestoreService";
-
-
 
 const initialSettings = {
   goalCalories: 2100,
@@ -144,68 +142,66 @@ function App() {
     }
   }
 
-async function deleteRecord(id) {
-  if (!user) {
-    return;
-  }
-
-  try {
-    await deleteUserRecord(user.uid, id);
-
-    setRecords((previousRecords) =>
-      previousRecords.filter((record) => record.id !== id),
-    );
-
-    if (editingRecord?.id === id) {
-      setEditingRecord(null);
+  async function deleteRecord(id) {
+    if (!user) {
+      return;
     }
 
-    showToast({
-      title: "Registro eliminado",
-      message: "El registro se eliminó correctamente.",
-      type: "info",
-    });
-  } catch (error) {
-    console.error("No se pudo eliminar el registro:", error);
+    try {
+      await deleteUserRecord(user.uid, id);
 
-    showToast({
-      title: "Error al eliminar",
-      message: "No se pudo eliminar el registro de Firebase.",
-      type: "error",
-    });
+      setRecords((previousRecords) =>
+        previousRecords.filter((record) => record.id !== id),
+      );
+
+      if (editingRecord?.id === id) {
+        setEditingRecord(null);
+      }
+
+      showToast({
+        title: "Registro eliminado",
+        message: "El registro se eliminó correctamente.",
+        type: "info",
+      });
+    } catch (error) {
+      console.error("No se pudo eliminar el registro:", error);
+
+      showToast({
+        title: "Error al eliminar",
+        message: "No se pudo eliminar el registro de Firebase.",
+        type: "error",
+      });
+    }
   }
-}
-async function saveSettings(newSettings) {
-  if (!user) {
-    return;
+  async function saveSettings(newSettings) {
+    if (!user) {
+      return;
+    }
+
+    try {
+      await saveUserSettings(user.uid, newSettings);
+
+      setSettings(newSettings);
+
+      showToast({
+        title: "Configuración guardada",
+        message: `${newSettings.mode} · ${Number(
+          newSettings.goalCalories,
+        ).toLocaleString("es-MX")} kcal · ${Number(
+          newSettings.goalWeight,
+        ).toFixed(1)} kg`,
+      });
+    } catch (error) {
+      console.error("No se pudo guardar la configuración:", error);
+
+      showToast({
+        title: "Error al guardar",
+        message: "No se pudo guardar la configuración en Firebase.",
+        type: "error",
+      });
+    }
   }
 
-  try {
-    await saveUserSettings(user.uid, newSettings);
-
-    setSettings(newSettings);
-
-    showToast({
-      title: "Configuración guardada",
-      message: `${newSettings.mode} · ${Number(
-        newSettings.goalCalories,
-      ).toLocaleString("es-MX")} kcal · ${Number(
-        newSettings.goalWeight,
-      ).toFixed(1)} kg`,
-    });
-  } catch (error) {
-    console.error("No se pudo guardar la configuración:", error);
-
-    showToast({
-      title: "Error al guardar",
-      message: "No se pudo guardar la configuración en Firebase.",
-      type: "error",
-    });
-  }
-}
-  
-
- 
   function showToast({ title, message = "", type = "success" }) {
     setToast({
       title,
@@ -249,7 +245,7 @@ async function saveSettings(newSettings) {
         onLogout={logoutUser}
       />
 
-      <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+      <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6" id="app-content">
         <section id="inicio" className="scroll-mt-24">
           <TodaySummary
             records={records}
@@ -298,6 +294,9 @@ async function saveSettings(newSettings) {
             onSaveRecord={saveRecord}
             onDeleteRecord={deleteRecord}
           />
+        </section>
+        <section id="reportes" className="scroll-mt-24">
+          <ReportsCard records={records} settings={settings} user={user} />
         </section>
 
         <footer className="pb-4 pt-2 text-center text-xs text-zinc-600">

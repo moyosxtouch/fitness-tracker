@@ -24,3 +24,87 @@ textarea {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  html,
+  body,
+  #root,
+  main {
+    min-height: 0 !important;
+    height: auto !important;
+    background: white !important;
+  }
+
+  main > :not(#app-content) {
+    display: none !important;
+  }
+
+  #app-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #app-content > :not(#reportes) {
+    display: none !important;
+  }
+
+  #reportes {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #reportes > section {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  #fitness-report {
+    width: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: white !important;
+    color: #18181b !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #fitness-report * {
+    color: #18181b !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #fitness-report .text-zinc-400,
+  #fitness-report .text-zinc-500 {
+    color: #52525b !important;
+  }
+
+  #fitness-report table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 10px !important;
+  }
+
+  #fitness-report th,
+  #fitness-report td {
+    padding: 6px !important;
+  }
+
+  #fitness-report tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
