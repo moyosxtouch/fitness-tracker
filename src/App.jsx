@@ -16,6 +16,7 @@ import SettingsModal from "./components/dashboard/SettingsModal";
 import ProgressPhotosCard from "./components/dashboard/ProgressPhotosCard";
 import AuthScreen from "./components/auth/AuthScreen";
 import { useAuth } from "./context/AuthContext";
+import CalorieCalculatorCard from "./components/calculator/CalorieCalculatorCard";
 import { logoutUser } from "./services/authService";
 import {
   deleteUserRecord,
@@ -237,6 +238,15 @@ function App() {
   if (!user) {
     return <AuthScreen />;
   }
+
+  const latestWeight =
+    records.find(
+      (record) =>
+        record.weight !== null &&
+        record.weight !== undefined &&
+        record.weight !== "" &&
+        Number.isFinite(Number(record.weight)),
+    )?.weight ?? null;
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <AppHeader user={user} onLogout={logout} />
@@ -247,6 +257,20 @@ function App() {
             records={records}
             settings={settings}
             onOpenSettings={() => setSettingsOpen(true)}
+          />
+        </section>
+        <section id="calculadora" className="scroll-mt-24">
+          <CalorieCalculatorCard
+            initialProfile={settings.calculatorProfile}
+            latestWeight={latestWeight}
+            onSelectCalories={({ calories, mode, profile }) => {
+              saveSettings({
+                ...settings,
+                goalCalories: calories,
+                mode,
+                calculatorProfile: profile,
+              });
+            }}
           />
         </section>
 

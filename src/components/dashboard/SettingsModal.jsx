@@ -11,7 +11,10 @@ export default function SettingsModal({
 
   useEffect(() => {
     if (isOpen) {
-      setForm(settings);
+      setForm({
+        ...settings,
+        mode: normalizeMode(settings.mode),
+      });
     }
   }, [isOpen, settings]);
 
@@ -65,6 +68,7 @@ export default function SettingsModal({
     }
 
     onSaveSettings({
+      ...settings,
       goalCalories,
       goalWeight,
       mode: form.mode,
@@ -147,11 +151,15 @@ export default function SettingsModal({
               onChange={handleChange}
               className="rounded-xl border border-zinc-700 bg-zinc-800 p-3 outline-none transition focus:border-lime-400"
             >
-              <option value="Perder peso">Perder peso</option>
+              <option value="Déficit agresivo">Déficit agresivo</option>
 
-              <option value="Mantener peso">Mantener peso</option>
+              <option value="Déficit moderado">Déficit moderado</option>
 
-              <option value="Ganar peso">Ganar peso</option>
+              <option value="Mantenimiento">Mantenimiento</option>
+
+              <option value="Volumen limpio">Volumen limpio (Lean bulk)</option>
+
+              <option value="Volumen">Volumen (Bulk)</option>
             </select>
           </label>
 
@@ -176,4 +184,14 @@ export default function SettingsModal({
       </section>
     </div>
   );
+}
+
+function normalizeMode(mode) {
+  const legacyModes = {
+    "Perder peso": "Déficit moderado",
+    "Mantener peso": "Mantenimiento",
+    "Ganar peso": "Volumen limpio",
+  };
+
+  return legacyModes[mode] ?? mode ?? "Déficit moderado";
 }

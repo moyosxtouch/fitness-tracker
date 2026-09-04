@@ -5,6 +5,7 @@ import {
   History,
   PlusCircle,
   FileText,
+  Calculator,
 } from "lucide-react";
 import UserMenu from "./UserMenu";
 
@@ -38,6 +39,11 @@ const links = [
     href: "#reportes",
     label: "Reportes",
     icon: FileText,
+  },
+  {
+    href: "#calculadora",
+    label: "Calculadora",
+    icon: Calculator,
   },
 ];
 
