@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Cloud, LoaderCircle } from "lucide-react";
 import { compressImage, formatFileSize } from "../../utils/imageCompression";
 import PhotoComparison from "./PhotoComparison";
@@ -41,6 +41,8 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   const [progressPhotos, setProgressPhotos] = useState([]);
   const [measurements, setMeasurements] = useState([]);
   const [editingProgress, setEditingProgress] = useState(null);
+  const [savingPhotos, setSavingPhotos] = useState(false);
+  const savingPhotosRef = useRef(false);
 
   const [form, setForm] = useState({
     date: getLocalDate(),
@@ -228,6 +230,9 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
   }
 
   async function handleSubmit(event) {
+    if (savingPhotosRef.current) {
+      return;
+    }
     event.preventDefault();
 
     if (!user) {
@@ -256,6 +261,8 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
 
       return;
     }
+    savingPhotosRef.current = true;
+    setSavingPhotos(true);
 
     try {
       const wasEditing = Boolean(editingProgress);
@@ -384,6 +391,9 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
           error.message || "Ocurrió un problema guardando las fotografías.",
         type: "error",
       });
+    } finally {
+      savingPhotosRef.current = false;
+      setSavingPhotos(false);
     }
   }
 
@@ -668,6 +678,7 @@ export default function ProgressPhotosCard({ records, onShowToast }) {
         handleSubmit={handleSubmit}
         handleChange={handleChange}
         handlePhotoChange={handlePhotoChange}
+        saving={savingPhotos}
       />
       <div className="mb-8">
         <PhotoComparison

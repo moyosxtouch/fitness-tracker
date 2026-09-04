@@ -1,4 +1,4 @@
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, LoaderCircle } from "lucide-react";
 import MeasurementField from "./MeasurementField";
 import PhotoInput from "./PhotoInput";
 
@@ -8,6 +8,7 @@ export default function ProgressPhotoForm({
   handleSubmit,
   handleChange,
   handlePhotoChange,
+  saving,
 }) {
   return (
     <form
@@ -114,10 +115,16 @@ export default function ProgressPhotoForm({
 
       <button
         type="submit"
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 p-3 font-bold text-black transition hover:bg-lime-300"
+        disabled={saving}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 p-3 font-bold text-black transition hover:bg-lime-300 disabled:cursor-wait disabled:opacity-60"
       >
-        <ImagePlus size={19} />
-        Guardar sesión de progreso
+        {saving ? (
+          <LoaderCircle className="animate-spin" size={19} />
+        ) : (
+          <ImagePlus size={19} />
+        )}
+
+        {saving ? "Guardando y sincronizando..." : "Guardar sesión de progreso"}
       </button>
     </form>
   );
