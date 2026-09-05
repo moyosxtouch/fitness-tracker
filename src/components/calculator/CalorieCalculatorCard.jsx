@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Calculator, Target } from "lucide-react";
+import { calculateCaloriePlan } from "../../utils/calorieCalculator";
 
 const activityLevels = [
   {
@@ -34,21 +35,21 @@ const caloriePhases = [
     key: "aggressiveDeficit",
     label: "Déficit agresivo",
     description: "25% por debajo del mantenimiento",
-    multiplier: 0.75,
+
     color: "border-red-500/30 bg-red-500/10 text-red-300",
   },
   {
     key: "moderateDeficit",
     label: "Déficit moderado",
     description: "15% por debajo del mantenimiento",
-    multiplier: 0.85,
+
     color: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   },
   {
     key: "maintenance",
     label: "Mantenimiento",
     description: "Calorías estimadas para mantener el peso",
-    multiplier: 1,
+
     color: "border-sky-500/30 bg-sky-500/10 text-sky-300",
   },
   {
@@ -56,7 +57,7 @@ const caloriePhases = [
     label: "Volumen limpio",
     secondaryLabel: "Lean bulk",
     description: "5% por encima del mantenimiento",
-    multiplier: 1.05,
+
     color: "border-lime-400/30 bg-lime-400/10 text-lime-300",
   },
   {
@@ -64,7 +65,7 @@ const caloriePhases = [
     label: "Volumen",
     secondaryLabel: "Bulk",
     description: "10% por encima del mantenimiento",
-    multiplier: 1.1,
+
     color: "border-violet-500/30 bg-violet-500/10 text-violet-300",
   },
 ];
@@ -310,36 +311,20 @@ function ResultSummary({ label, value }) {
 }
 
 function calculateCalories(form) {
-  const age = Number(form.age);
-  const height = Number(form.height);
-  const weight = Number(form.weight);
-  const activity = Number(form.activity);
+  const plan = calculateCaloriePlan(form);
 
-  if (
-    !Number.isFinite(age) ||
-    !Number.isFinite(height) ||
-    !Number.isFinite(weight) ||
-    age < 18 ||
-    height <= 0 ||
-    weight <= 0
-  ) {
+  if (!plan) {
     return null;
   }
 
-  const sexAdjustment = form.sex === "female" ? -161 : 5;
-
-  const bmr = Math.round(10 * weight + 6.25 * height - 5 * age + sexAdjustment);
-
-  const maintenance = Math.round(bmr * activity);
-
   const phases = caloriePhases.map((phase) => ({
     ...phase,
-    calories: Math.round((maintenance * phase.multiplier) / 10) * 10,
+    calories: plan.caloriesByMode[phase.label],
   }));
 
   return {
-    bmr,
-    maintenance,
+    bmr: plan.bmr,
+    maintenance: plan.maintenance,
     phases,
   };
 }

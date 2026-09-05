@@ -28,7 +28,7 @@ import {
 const initialSettings = {
   goalCalories: 2100,
   goalWeight: 67,
-  mode: "Perder peso",
+  mode: "Déficit moderado",
 };
 
 function App() {

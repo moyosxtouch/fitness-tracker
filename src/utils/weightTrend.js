@@ -91,15 +91,25 @@ export function isTrendAlignedWithGoal(goal, trend) {
     return null;
   }
 
-  if (goal === "Perder peso") {
+  const normalizedGoal =
+    {
+      "Perder peso": "Déficit moderado",
+      "Mantener peso": "Mantenimiento",
+      "Ganar peso": "Volumen limpio",
+    }[goal] ?? goal;
+
+  if (
+    normalizedGoal === "Déficit agresivo" ||
+    normalizedGoal === "Déficit moderado"
+  ) {
     return trend.status === "down";
   }
 
-  if (goal === "Mantener peso") {
+  if (normalizedGoal === "Mantenimiento") {
     return trend.status === "stable";
   }
 
-  if (goal === "Ganar peso") {
+  if (normalizedGoal === "Volumen limpio" || normalizedGoal === "Volumen") {
     return trend.status === "up";
   }
 

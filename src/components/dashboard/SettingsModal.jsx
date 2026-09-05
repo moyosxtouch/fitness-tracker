@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Save, Settings, X } from "lucide-react";
+import { calculateCaloriesForMode } from "../../utils/calorieCalculator";
 
 export default function SettingsModal({
   isOpen,
@@ -45,10 +46,25 @@ export default function SettingsModal({
   function handleChange(event) {
     const { name, value } = event.target;
 
-    setForm((previousForm) => ({
-      ...previousForm,
-      [name]: value,
-    }));
+    setForm((previousForm) => {
+      if (name !== "mode") {
+        return {
+          ...previousForm,
+          [name]: value,
+        };
+      }
+
+      const calculatedCalories = calculateCaloriesForMode(
+        value,
+        settings.calculatorProfile,
+      );
+
+      return {
+        ...previousForm,
+        mode: value,
+        goalCalories: calculatedCalories ?? previousForm.goalCalories,
+      };
+    });
   }
 
   function handleSubmit(event) {
