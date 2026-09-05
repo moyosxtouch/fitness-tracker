@@ -258,7 +258,7 @@ export default function CalorieCalculatorCard({
                                 },
                               })
                             }
-                            className="mt-2 inline-flex items-center gap-1 text-xs font-bold underline underline-offset-4"
+                            className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-current/20 bg-black/20 px-3 py-2 text-xs font-bold transition hover:-translate-y-0.5 hover:bg-black/30 hover:brightness-110 active:translate-y-0 active:scale-95"
                           >
                             <Target size={14} />
                             Usar este objetivo
